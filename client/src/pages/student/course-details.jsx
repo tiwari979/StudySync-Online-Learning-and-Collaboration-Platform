@@ -19,6 +19,7 @@ function StudentViewCourseDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [enrolling, setEnrolling] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   async function fetchCourseDetails() {
     try {
@@ -126,11 +127,18 @@ function StudentViewCourseDetailsPage() {
       {/* Hero Section */}
       <div className="grid md:grid-cols-3 gap-6 mb-8">
         <div className="md:col-span-2">
-          <img
-            src={courseDetails?.image}
-            alt={courseDetails?.title}
-            className="w-full h-96 object-cover rounded-lg mb-6"
-          />
+          {imageError ? (
+            <div className="w-full h-96 bg-gradient-to-br from-blue-400 to-indigo-600 rounded-lg mb-6 flex items-center justify-center">
+              <span className="text-white text-center font-semibold text-lg">{courseDetails?.title}</span>
+            </div>
+          ) : (
+            <img
+              src={courseDetails?.image}
+              alt={courseDetails?.title}
+              className="w-full h-96 object-cover rounded-lg mb-6"
+              onError={() => setImageError(true)}
+            />
+          )}
           <Card>
             <CardHeader>
               <CardTitle className="text-3xl">{courseDetails?.title}</CardTitle>

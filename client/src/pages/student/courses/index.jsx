@@ -39,6 +39,7 @@ function StudentViewCoursesPage() {
   const [sort, setSort] = useState("price-lowtohigh");
   const [filters, setFilters] = useState({});
   const [searchParams, setSearchParams] = useSearchParams();
+  const [imageErrors, setImageErrors] = useState({});
   const {
     studentViewCoursesList,
     setStudentViewCoursesList,
@@ -47,6 +48,13 @@ function StudentViewCoursesPage() {
   } = useContext(StudentContext);
   const navigate = useNavigate();
   const { auth } = useContext(AuthContext);
+
+  const handleImageError = (courseId) => {
+    setImageErrors(prev => ({
+      ...prev,
+      [courseId]: true
+    }));
+  };
 
   function handleFilterOnChange(getSectionId, getCurrentOption) {
     let cpyFilters = { ...filters };
@@ -198,11 +206,18 @@ function StudentViewCoursesPage() {
                   key={courseItem?._id}
                 >
                   <div className="relative overflow-hidden bg-gray-200 h-48">
-                    <img
-                      src={courseItem?.image}
-                      alt={courseItem?.title}
-                      className="w-full h-full object-cover"
-                    />
+                    {imageErrors[courseItem?._id] ? (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-400 to-indigo-600">
+                        <span className="text-white text-center font-semibold">{courseItem?.title}</span>
+                      </div>
+                    ) : (
+                      <img
+                        src={courseItem?.image}
+                        alt={courseItem?.title}
+                        className="w-full h-full object-cover"
+                        onError={() => handleImageError(courseItem?._id)}
+                      />
+                    )}
                     <div className="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded text-xs font-bold">
                       {courseItem?.level.toUpperCase()}
                     </div>
