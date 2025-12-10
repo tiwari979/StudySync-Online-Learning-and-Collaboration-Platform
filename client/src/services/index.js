@@ -271,3 +271,13 @@ export async function voteGroupPollService(groupId, pollId, payload) {
   );
   return data;
 }
+
+export async function leaveGroupService(groupId) {
+  const { data } = await axiosInstance.post(`/groups/${groupId}/leave`);
+  return data;
+}
+
+export async function deleteGroupService(groupId) {
+  const { data } = await axiosInstance.delete(`/groups/${groupId}`);
+  return data;
+}

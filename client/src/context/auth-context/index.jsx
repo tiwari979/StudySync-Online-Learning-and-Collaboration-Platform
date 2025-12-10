@@ -50,6 +50,8 @@ export default function AuthProvider({ children }) {
       const data = await loginService(signInFormData);
 
       if (data.success) {
+        console.log("Login response data:", data.data);
+        console.log("User role from server:", data.data.user?.role);
         sessionStorage.setItem(
           "accessToken",
           JSON.stringify(data.data.accessToken)

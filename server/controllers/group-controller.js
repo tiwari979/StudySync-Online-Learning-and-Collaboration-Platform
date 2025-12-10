@@ -508,6 +508,104 @@ const votePoll = async (req, res) => {
   }
 };
 
+// Leave group
+const leaveGroup = async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    const userId = req.user._id;
+
+    const group = await Group.findById(groupId);
+    if (!group) {
+      return res.status(404).json({ success: false, message: "Group not found" });
+    }
+
+    const isMember = group.members.some((m) => m.userId.toString() === userId);
+    if (!isMember) {
+      return res.status(403).json({ success: false, message: "You are not a member of this group" });
+    }
+
+    // Prevent owner from leaving without deleting/transferring ownership
+    if (group.createdBy.toString() === userId) {
+      return res.status(403).json({
+        success: false,
+        message: "Group owner cannot leave the group. Delete the group or transfer ownership first.",
+      });
+    }
+
+    group.members = group.members.filter((m) => m.userId.toString() !== userId);
+    await group.save();
+
+    // If no members remain, remove the group and associated data
+    if (!group.members || group.members.length === 0) {
+      // delete related data
+      await GroupMessage.deleteMany({ groupId });
+      await GroupResource.deleteMany({ groupId });
+      await GroupTask.deleteMany({ groupId });
+      await GroupPoll.deleteMany({ groupId });
+
+      const files = await GroupFile.find({ groupId });
+      for (const f of files) {
+        try {
+          const fullPath = path.join(uploadsDir, f.fileName || "");
+          if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
+        } catch (err) {
+          console.error("Error deleting group file from disk:", err);
+        }
+      }
+      await GroupFile.deleteMany({ groupId });
+
+      await Group.findByIdAndDelete(groupId);
+      return res.status(200).json({ success: true, message: "Left and removed empty group" });
+    }
+
+    return res.status(200).json({ success: true, message: "Left group successfully" });
+  } catch (error) {
+    console.error("leaveGroup error:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// Delete group (owner only)
+const deleteGroup = async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    const userId = req.user._id;
+
+    const group = await Group.findById(groupId);
+    if (!group) {
+      return res.status(404).json({ success: false, message: "Group not found" });
+    }
+
+    if (group.createdBy.toString() !== userId) {
+      return res.status(403).json({ success: false, message: "Only the group owner can delete the group" });
+    }
+
+    // delete related data
+    await GroupMessage.deleteMany({ groupId });
+    await GroupResource.deleteMany({ groupId });
+    await GroupTask.deleteMany({ groupId });
+    await GroupPoll.deleteMany({ groupId });
+
+    const files = await GroupFile.find({ groupId });
+    for (const f of files) {
+      try {
+        const fullPath = path.join(uploadsDir, f.fileName || "");
+        if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
+      } catch (err) {
+        console.error("Error deleting group file from disk:", err);
+      }
+    }
+    await GroupFile.deleteMany({ groupId });
+
+    await Group.findByIdAndDelete(groupId);
+
+    return res.status(200).json({ success: true, message: "Group deleted successfully" });
+  } catch (error) {
+    console.error("deleteGroup error:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
 module.exports = {
   createGroup,
   getMyGroups,
@@ -525,6 +623,8 @@ module.exports = {
   createPoll,
   getPolls,
   votePoll,
+  leaveGroup,
+  deleteGroup,
   upload, // Export multer middleware
 };
 

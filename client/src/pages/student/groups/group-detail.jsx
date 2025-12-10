@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,6 +38,8 @@ import {
   createGroupPollService,
   fetchGroupPollsService,
   voteGroupPollService,
+  leaveGroupService,
+  deleteGroupService,
 } from "@/services";
 import { useContext } from "react";
 import { AuthContext } from "@/context/auth-context";
@@ -89,6 +91,7 @@ function formatFileSize(bytes) {
 function GroupDetailPage() {
   const { groupId } = useParams();
   const { auth } = useContext(AuthContext);
+  const navigate = useNavigate();
   const [group, setGroup] = useState(null);
   const [messages, setMessages] = useState([]);
   const [resources, setResources] = useState([]);
@@ -504,6 +507,53 @@ function GroupDetailPage() {
                   Join code: <span className="font-mono font-bold">{group.joinCode}</span>
                 </div>
               </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {String(group.createdBy) === String(currentUserId) ? (
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={async () => {
+                    if (!window.confirm("Delete this group? This action cannot be undone.")) return;
+                    try {
+                      const res = await deleteGroupService(groupId);
+                      if (res.success) {
+                        alert("Group deleted");
+                        navigate("/groups");
+                      } else {
+                        alert(res.message || "Failed to delete group");
+                      }
+                    } catch (err) {
+                      console.error(err);
+                      alert(err?.response?.data?.message || "Failed to delete group");
+                    }
+                  }}
+                >
+                  Delete Group
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={async () => {
+                    if (!window.confirm("Leave this group? You will lose access to group content.")) return;
+                    try {
+                      const res = await leaveGroupService(groupId);
+                      if (res.success) {
+                        alert("You have left the group");
+                        navigate("/groups");
+                      } else {
+                        alert(res.message || "Failed to leave group");
+                      }
+                    } catch (err) {
+                      console.error(err);
+                      alert(err?.response?.data?.message || "Failed to leave group");
+                    }
+                  }}
+                >
+                  Leave Group
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>

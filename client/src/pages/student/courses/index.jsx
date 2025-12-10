@@ -189,41 +189,42 @@ function StudentViewCoursesPage() {
               {studentViewCoursesList.length} Results
             </span>
           </div>
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {studentViewCoursesList && studentViewCoursesList.length > 0 ? (
               studentViewCoursesList.map((courseItem) => (
                 <Card
                   onClick={() => handleCourseNavigate(courseItem?._id)}
-                  className="cursor-pointer"
+                  className="cursor-pointer hover:shadow-lg transition-all transform hover:scale-105"
                   key={courseItem?._id}
                 >
-                  <CardContent className="flex gap-4 p-4">
-                    <div className="w-48 h-32 flex-shrink-0">
-                      <img
-                        src={courseItem?.image}
-                        className="w-ful h-full object-cover"
-                      />
+                  <div className="relative overflow-hidden bg-gray-200 h-48">
+                    <img
+                      src={courseItem?.image}
+                      alt={courseItem?.title}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded text-xs font-bold">
+                      {courseItem?.level.toUpperCase()}
                     </div>
-                    <div className="flex-1">
-                      <CardTitle className="text-xl mb-2">
-                        {courseItem?.title}
-                      </CardTitle>
-                      <p className="text-sm text-gray-600 mb-1">
-                        Created By{" "}
-                        <span className="font-bold">
-                          {courseItem?.instructorName}
-                        </span>
-                      </p>
-                      <p className="text-[16px] text-gray-600 mt-3 mb-2">
-                        {`${courseItem?.curriculum?.length} ${
-                          courseItem?.curriculum?.length <= 1
-                            ? "Lecture"
-                            : "Lectures"
-                        } - ${courseItem?.level.toUpperCase()} Level`}
-                      </p>
-                      <p className="font-bold text-lg">
+                  </div>
+                  <CardContent className="p-4">
+                    <CardTitle className="text-lg mb-2 line-clamp-2">
+                      {courseItem?.title}
+                    </CardTitle>
+                    <p className="text-sm text-gray-600 mb-3">
+                      By <span className="font-semibold">{courseItem?.instructorName}</span>
+                    </p>
+                    <p className="text-xs text-gray-500 mb-3">
+                      {courseItem?.curriculum?.length} lectures • {courseItem?.primaryLanguage}
+                    </p>
+                    <p className="text-gray-700 text-sm line-clamp-2 mb-3">
+                      {courseItem?.subtitle}
+                    </p>
+                    <div className="flex items-center justify-between pt-3 border-t">
+                      <span className="text-2xl font-bold text-blue-600">
                         ${courseItem?.pricing}
-                      </p>
+                      </span>
+                      <Button size="sm">Enroll</Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -231,7 +232,10 @@ function StudentViewCoursesPage() {
             ) : loadingState ? (
               <Skeleton />
             ) : (
-              <h1 className="font-extrabold text-4xl">No Courses Found</h1>
+              <div className="col-span-full text-center py-12">
+                <h1 className="font-extrabold text-4xl mb-2">No Courses Found</h1>
+                <p className="text-gray-600">Try adjusting your filters or search criteria</p>
+              </div>
             )}
           </div>
         </main>

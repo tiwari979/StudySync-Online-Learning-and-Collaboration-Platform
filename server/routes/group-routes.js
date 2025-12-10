@@ -17,6 +17,8 @@ const {
   createPoll,
   getPolls,
   votePoll,
+  leaveGroup,
+  deleteGroup,
   upload,
 } = require("../controllers/group-controller");
 
@@ -43,6 +45,10 @@ router.post("/:groupId/files", authenticate, upload.single("file"), uploadFile);
 router.get("/:groupId/polls", authenticate, getPolls);
 router.post("/:groupId/polls", authenticate, createPoll);
 router.post("/:groupId/polls/:pollId/vote", authenticate, votePoll);
+
+// Leave or delete group
+router.post("/:groupId/leave", authenticate, leaveGroup);
+router.delete("/:groupId", authenticate, deleteGroup);
 
 module.exports = router;
 

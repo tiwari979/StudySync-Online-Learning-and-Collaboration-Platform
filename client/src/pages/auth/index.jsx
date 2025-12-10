@@ -43,10 +43,16 @@ function AuthPage() {
 
   // Redirect if already authenticated
   useEffect(() => {
+    console.log("Auth page - authenticated:", auth?.authenticate);
+    console.log("Auth page - user role:", auth?.user?.role);
+    console.log("Auth page - full user object:", auth?.user);
+    
     if (auth?.authenticate) {
       if (auth?.user?.role === "instructor") {
+        console.log("Redirecting to instructor dashboard");
         navigate("/instructor", { replace: true });
       } else {
+        console.log("Redirecting to student home");
         navigate("/home", { replace: true });
       }
     }
