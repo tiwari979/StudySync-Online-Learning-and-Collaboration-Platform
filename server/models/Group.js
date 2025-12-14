@@ -6,6 +6,8 @@ const GroupSchema = new mongoose.Schema(
     description: { type: String, default: "" },
     joinCode: { type: String, unique: true, index: true },
     inviteToken: { type: String, default: "" },
+    courseId: { type: mongoose.Schema.Types.ObjectId, ref: "Course" },
+    active: { type: Boolean, default: true },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     members: [
       {

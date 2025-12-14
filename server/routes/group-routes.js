@@ -20,6 +20,8 @@ const {
   leaveGroup,
   deleteGroup,
   upload,
+  createCourseGroup,
+  joinCourseGroup,
 } = require("../controllers/group-controller");
 
 const router = express.Router();
@@ -27,6 +29,9 @@ const router = express.Router();
 router.post("/create", authenticate, createGroup);
 router.get("/my", authenticate, getMyGroups);
 router.post("/join", authenticate, joinGroup);
+// Course-specific groups
+router.post("/course/create", authenticate, createCourseGroup);
+router.post("/course/join", authenticate, joinCourseGroup);
 router.get("/:groupId", authenticate, getGroupDetails);
 
 router.get("/:groupId/messages", authenticate, getMessages);

@@ -290,3 +290,14 @@ export async function deleteGroupService(groupId) {
   const { data } = await axiosInstance.delete(`/groups/${groupId}`);
   return data;
 }
+
+// Course group management
+export async function createCourseGroupService(payload) {
+  const { data } = await axiosInstance.post(`/groups/course/create`, payload);
+  return data;
+}
+
+export async function joinCourseGroupService(payload) {
+  const { data } = await axiosInstance.post(`/groups/course/join`, payload);
+  return data;
+}

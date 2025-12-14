@@ -5,6 +5,8 @@ const GroupResource = require("../models/GroupResource");
 const GroupTask = require("../models/GroupTask");
 const GroupPoll = require("../models/GroupPoll");
 const GroupFile = require("../models/GroupFile");
+const Course = require("../models/Course");
+const StudentCourses = require("../models/StudentCourses");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
@@ -76,6 +78,102 @@ const createGroup = async (req, res) => {
     });
   } catch (error) {
     console.error("createGroup error:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// Instructor creates a group tied to a course; if one already exists, return existing
+const createCourseGroup = async (req, res) => {
+  try {
+    const { courseId, name, description = "" } = req.body;
+    const userId = req.user._id?.toString();
+
+    if (!courseId) {
+      return res.status(400).json({ success: false, message: "courseId is required" });
+    }
+
+    const course = await Course.findOne({ _id: courseId, instructorId: userId });
+    if (!course) {
+      return res
+        .status(403)
+        .json({ success: false, message: "You can only create groups for your own course" });
+    }
+
+    const existing = await Group.findOne({ courseId });
+    if (existing) {
+      return res.status(200).json({
+        success: true,
+        message: "Group already exists for this course",
+        data: existing,
+      });
+    }
+
+    const joinCode = await generateJoinCode();
+    const newGroup = new Group({
+      name: name || `${course.title || "Course"} Group`,
+      description,
+      joinCode,
+      createdBy: userId,
+      members: [{ userId, role: "admin" }],
+      courseId,
+      active: true,
+    });
+
+    await newGroup.save();
+    newGroup.inviteToken = createInviteToken(newGroup._id.toString());
+    await newGroup.save();
+
+    return res.status(201).json({
+      success: true,
+      message: "Course group created",
+      data: newGroup,
+    });
+  } catch (error) {
+    console.error("createCourseGroup error:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// Student joins course group via join code; validates enrollment
+const joinCourseGroup = async (req, res) => {
+  try {
+    const { joinCode } = req.body;
+    const userId = req.user._id?.toString();
+
+    if (!joinCode) {
+      return res.status(400).json({ success: false, message: "joinCode is required" });
+    }
+
+    const group = await Group.findOne({ joinCode, active: true });
+    if (!group || !group.courseId) {
+      return res.status(404).json({ success: false, message: "Group not found" });
+    }
+
+    const enrolled = await StudentCourses.findOne({
+      userId,
+      "courses.courseId": group.courseId.toString(),
+    });
+
+    if (!enrolled) {
+      return res.status(403).json({
+        success: false,
+        message: "You must be enrolled in this course to join its group",
+      });
+    }
+
+    const alreadyMember = group.members.some((m) => m.userId.toString() === userId);
+    if (!alreadyMember) {
+      group.members.push({ userId, role: "member" });
+      await group.save();
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Joined course group successfully",
+      data: group,
+    });
+  } catch (error) {
+    console.error("joinCourseGroup error:", error);
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
@@ -626,5 +724,7 @@ module.exports = {
   leaveGroup,
   deleteGroup,
   upload, // Export multer middleware
+  createCourseGroup,
+  joinCourseGroup,
 };
 

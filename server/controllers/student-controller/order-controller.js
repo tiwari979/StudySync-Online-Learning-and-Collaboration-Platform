@@ -2,6 +2,7 @@ const paypal = require("../../helpers/paypal");
 const Order = require("../../models/Order");
 const Course = require("../../models/Course");
 const StudentCourses = require("../../models/StudentCourses");
+const Group = require("../../models/Group");
 
 const createOrder = async (req, res) => {
   try {
@@ -170,10 +171,22 @@ const capturePaymentAndFinalizeOrder = async (req, res) => {
       },
     });
 
+    // Get course group join code
+    let groupJoinCode = null;
+    try {
+      const group = await Group.findOne({ courseId: order.courseId });
+      if (group) {
+        groupJoinCode = group.joinCode;
+      }
+    } catch (err) {
+      console.log("Error fetching group join code:", err);
+    }
+
     res.status(200).json({
       success: true,
       message: "Order confirmed",
       data: order,
+      groupJoinCode,
     });
   } catch (err) {
     console.log(err);
@@ -262,10 +275,22 @@ const directEnrollCourse = async (req, res) => {
       },
     });
 
+    // Get course group join code
+    let groupJoinCode = null;
+    try {
+      const group = await Group.findOne({ courseId });
+      if (group) {
+        groupJoinCode = group.joinCode;
+      }
+    } catch (err) {
+      console.log("Error fetching group join code:", err);
+    }
+
     res.status(201).json({
       success: true,
       message: "Successfully enrolled in course",
       data: newOrder,
+      groupJoinCode,
     });
   } catch (err) {
     console.log(err);

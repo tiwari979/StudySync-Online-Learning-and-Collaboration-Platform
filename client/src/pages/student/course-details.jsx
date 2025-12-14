@@ -10,7 +10,7 @@ import {
 } from "@/services";
 import { AuthContext } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
-import { Star, Users, Clock, Award, Play } from "lucide-react";
+import { Star, Users, Clock, Award, Play, Copy, X } from "lucide-react";
 
 function StudentViewCourseDetailsPage() {
   const { id } = useParams();
@@ -22,6 +22,8 @@ function StudentViewCourseDetailsPage() {
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [enrolling, setEnrolling] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [showGroupCode, setShowGroupCode] = useState(false);
+  const [groupCode, setGroupCode] = useState(null);
 
   async function fetchCourseDetails() {
     try {
@@ -74,16 +76,25 @@ function StudentViewCourseDetailsPage() {
       console.log("Enroll response:", response);
 
       if (response?.success) {
+        // Store group code and show modal
+        if (response?.groupJoinCode) {
+          setGroupCode(response?.groupJoinCode);
+          setShowGroupCode(true);
+        }
+        
         toast({
           title: "Success! 🎉",
-          description: "You have successfully enrolled in this course. Redirecting to course...",
+          description: "You have successfully enrolled in this course.",
         });
         // Refresh course details to update enrolled status
         await fetchCourseDetails();
-        // Redirect to course progress page
-        setTimeout(() => {
-          navigate(`/course-progress/${courseDetails?._id}`);
-        }, 1500);
+        
+        // Auto-redirect after 4 seconds if no group code shown
+        if (!response?.groupJoinCode) {
+          setTimeout(() => {
+            navigate(`/course-progress/${courseDetails?._id}`);
+          }, 1500);
+        }
       } else {
         toast({
           title: "Enrollment Failed",
@@ -286,6 +297,58 @@ function StudentViewCourseDetailsPage() {
           </Card>
         </div>
       </div>
+
+      {/* Group Code Modal */}
+      {showGroupCode && groupCode && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="max-w-md w-full mx-4">
+            <CardHeader className="flex justify-between flex-row items-start">
+              <CardTitle className="text-green-600">🎉 Ready to Join the Group!</CardTitle>
+              <button
+                onClick={() => setShowGroupCode(false)}
+                className="p-1 hover:bg-gray-100 rounded"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-sm font-medium text-gray-600 mb-1">Course</p>
+                <p className="text-lg font-semibold">{courseDetails?.title}</p>
+              </div>
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <p className="text-sm font-medium text-gray-600 mb-2">Your Group Join Code</p>
+                <div className="flex items-center gap-2">
+                  <code className="text-2xl font-bold tracking-wider text-blue-600">{groupCode}</code>
+                  <Button
+                    onClick={async () => {
+                      await navigator.clipboard?.writeText(groupCode);
+                      toast({
+                        title: "Copied!",
+                        description: "Group code copied to clipboard",
+                      });
+                    }}
+                    variant="ghost"
+                    size="sm"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">Share this code with classmates to join the group chat</p>
+              </div>
+              <Button
+                onClick={() => {
+                  setShowGroupCode(false);
+                  navigate(`/course-progress/${courseDetails?._id}`);
+                }}
+                className="w-full"
+              >
+                Start Learning
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

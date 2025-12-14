@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import VideoPlayer from "@/components/video-player";
@@ -18,8 +19,10 @@ import {
   getCurrentCourseProgressService,
   markLectureAsViewedService,
   resetCourseProgressService,
+  joinCourseGroupService,
 } from "@/services";
-import { Check, ChevronLeft, ChevronRight, Play } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Check, ChevronLeft, ChevronRight, Play, Copy } from "lucide-react";
 import { useContext, useEffect, useState } from "react";
 import Confetti from "react-confetti";
 import { useNavigate, useParams } from "react-router-dom";
@@ -29,12 +32,16 @@ function StudentViewCourseProgressPage() {
   const { auth } = useContext(AuthContext);
   const { studentCurrentCourseProgress, setStudentCurrentCourseProgress } =
     useContext(StudentContext);
+  const { toast } = useToast();
   const [lockCourse, setLockCourse] = useState(false);
   const [currentLecture, setCurrentLecture] = useState(null);
   const [showCourseCompleteDialog, setShowCourseCompleteDialog] =
     useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [isSideBarOpen, setIsSideBarOpen] = useState(true);
+  const [joinCode, setJoinCode] = useState("");
+  const [joiningGroup, setJoiningGroup] = useState(false);
+  const [joined, setJoined] = useState(false);
   const { id } = useParams();
 
   async function fetchCurrentCourseProgress() {
@@ -88,6 +95,49 @@ function StudentViewCourseProgressPage() {
       if (response?.success) {
         fetchCurrentCourseProgress();
       }
+    }
+  }
+
+  async function handleJoinGroup() {
+    if (!joinCode.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a join code",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setJoiningGroup(true);
+      const response = await joinCourseGroupService({ joinCode: joinCode.trim() });
+
+      if (response?.success) {
+        setJoined(true);
+        setJoinCode("");
+        toast({
+          title: "Success!",
+          description: "You've joined the group chat",
+        });
+        // Navigate to group after 2 seconds
+        setTimeout(() => {
+          navigate(`/groups/${response?.data?._id}`);
+        }, 2000);
+      } else {
+        toast({
+          title: "Failed to join group",
+          description: response?.message || "Invalid join code",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error?.response?.data?.message || "Error joining group",
+        variant: "destructive",
+      });
+    } finally {
+      setJoiningGroup(false);
     }
   }
 
@@ -168,7 +218,7 @@ function StudentViewCourseProgressPage() {
           }`}
         >
           <Tabs defaultValue="content" className="h-full flex flex-col">
-            <TabsList className="grid bg-[#1c1d1f] w-full grid-cols-2 p-0 h-14 border-b border-gray-700">
+            <TabsList className="grid bg-[#1c1d1f] w-full grid-cols-3 p-0 h-14 border-b border-gray-700">
               <TabsTrigger
                 value="content"
                 className="text-white rounded-none h-full hover:bg-gray-800"
@@ -180,6 +230,12 @@ function StudentViewCourseProgressPage() {
                 className="text-white rounded-none h-full hover:bg-gray-800"
               >
                 Overview
+              </TabsTrigger>
+              <TabsTrigger
+                value="group"
+                className="text-white rounded-none h-full hover:bg-gray-800"
+              >
+                Group
               </TabsTrigger>
             </TabsList>
             <TabsContent value="content">
@@ -213,6 +269,57 @@ function StudentViewCourseProgressPage() {
                   <p className="text-gray-300">
                     {studentCurrentCourseProgress?.courseDetails?.description}
                   </p>
+                </div>
+              </ScrollArea>
+            </TabsContent>
+            <TabsContent value="group" className="flex-1 overflow-hidden p-4">
+              <ScrollArea className="h-full">
+                <div className="space-y-4">
+                  <div>
+                    <h2 className="text-xl font-bold mb-4 text-white">Course Group Chat</h2>
+                    {joined ? (
+                      <div className="bg-green-900/30 border border-green-500 rounded-lg p-4">
+                        <p className="text-green-400 text-sm font-semibold mb-3">✓ You've joined the group!</p>
+                        <Button
+                          onClick={() => navigate(`/student/groups`)}
+                          className="w-full bg-green-600 hover:bg-green-700"
+                        >
+                          Go to Group Chat
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <p className="text-gray-300 text-sm">
+                          Enter your group join code to join the course group chat with classmates.
+                        </p>
+                        <div className="space-y-2">
+                          <Label className="text-white text-sm">Join Code</Label>
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="Enter join code"
+                              value={joinCode}
+                              onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                              onKeyPress={(e) => {
+                                if (e.key === "Enter") handleJoinGroup();
+                              }}
+                              maxLength={6}
+                              className="bg-gray-700 border-gray-600 text-white placeholder:text-gray-400"
+                            />
+                            <Button
+                              onClick={handleJoinGroup}
+                              disabled={joiningGroup || !joinCode.trim()}
+                              className="bg-blue-600 hover:bg-blue-700"
+                            >
+                              Join
+                            </Button>
+                          </div>
+                          <p className="text-xs text-gray-400">
+                            The instructor will provide you with the join code.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </ScrollArea>
             </TabsContent>
