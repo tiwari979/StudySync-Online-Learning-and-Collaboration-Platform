@@ -9,6 +9,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -310,10 +316,11 @@ function AdminDashboard() {
   };
 
   const filteredUsers = users.filter((user) => {
+    const normalizedRole = user.role === "user" ? "student" : user.role;
     const matchesSearch =
       user.userName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.userEmail?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesRole = filterRole === "all" || user.role === filterRole;
+    const matchesRole = filterRole === "all" || normalizedRole === filterRole;
     return matchesSearch && matchesRole;
   });
 
@@ -389,7 +396,7 @@ function AdminDashboard() {
             {stats?.recentUsers?.slice(0, 5).map((user) => (
               <div key={user._id} className="flex justify-between items-center text-sm">
                 <span className="text-gray-700">{user.userName}</span>
-                <span className="text-gray-500 text-xs">{user.role}</span>
+                <span className="text-gray-500 text-xs">{user.role === "user" ? "student" : user.role}</span>
               </div>
             ))}
           </div>
@@ -439,17 +446,20 @@ function AdminDashboard() {
                   <td className="px-6 py-4 whitespace-nowrap">{user.userName}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{user.userEmail}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`px-2 py-1 text-xs rounded-full ${
-                        user.role === "superadmin"
+                    {(() => {
+                      const displayRole = user.role === "user" ? "student" : user.role;
+                      const badgeClass =
+                        displayRole === "superadmin"
                           ? "bg-purple-100 text-purple-800"
-                          : user.role === "instructor"
+                          : displayRole === "instructor"
                           ? "bg-blue-100 text-blue-800"
-                          : "bg-green-100 text-green-800"
-                      }`}
-                    >
-                      {user.role}
-                    </span>
+                          : "bg-green-100 text-green-800";
+                      return (
+                        <span className={`px-2 py-1 text-xs rounded-full ${badgeClass}`}>
+                          {displayRole}
+                        </span>
+                      );
+                    })()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 capitalize">{user.status || "active"}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
@@ -472,27 +482,42 @@ function AdminDashboard() {
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleUserStatus(user._id, "suspended")}
-                      >
-                        <ShieldOff className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleUserStatus(user._id, "banned")}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleUserStatus(user._id, "active")}
-                      >
-                        <ShieldCheck className="w-4 h-4" />
-                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleUserStatus(user._id, "suspended")}
+                          >
+                            <ShieldOff className="w-4 h-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Suspends user access temporarily</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleUserStatus(user._id, "banned")}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Permanently bans user</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleUserStatus(user._id, "active")}
+                          >
+                            <ShieldCheck className="w-4 h-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Restore user access</TooltipContent>
+                      </Tooltip>
                       <Button
                         variant="destructive"
                         size="sm"
@@ -567,34 +592,54 @@ function AdminDashboard() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleCourseApprove(course._id)}
-                      >
-                        <Check className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleCourseReject(course._id)}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleAssignInstructor(course._id)}
-                      >
-                        <Users className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEditCourse(course._id)}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleCourseApprove(course._id)}
+                          >
+                            <Check className="w-4 h-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Approve course for publishing</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleCourseReject(course._id)}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Reject course and unpublish</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleAssignInstructor(course._id)}
+                          >
+                            <Users className="w-4 h-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Assign a different instructor</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEditCourse(course._id)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Quick edit course fields</TooltipContent>
+                      </Tooltip>
                       <Button
                         variant="outline"
                         size="sm"
@@ -679,57 +724,87 @@ function AdminDashboard() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{group.joinCode}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{group.membersCount}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        handleToggleGroupSettings(group._id, { chatDisabled: !group.chatDisabled })
-                      }
-                    >
-                      {group.chatDisabled ? <BellOff className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            handleToggleGroupSettings(group._id, { chatDisabled: !group.chatDisabled })
+                          }
+                        >
+                          {group.chatDisabled ? <BellOff className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Toggle chat availability</TooltipContent>
+                    </Tooltip>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          handleToggleGroupSettings(group._id, {
-                            profanityFilterEnabled: !group.profanityFilterEnabled,
-                          })
-                        }
-                      >
-                        <MessageCircleWarning className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          handleToggleGroupSettings(group._id, {
-                            spamFilterEnabled: !group.spamFilterEnabled,
-                          })
-                        }
-                      >
-                        <ToggleRight className="w-4 h-4" />
-                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              handleToggleGroupSettings(group._id, {
+                                profanityFilterEnabled: !group.profanityFilterEnabled,
+                              })
+                            }
+                          >
+                            <MessageCircleWarning className="w-4 h-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Toggle profanity filter</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              handleToggleGroupSettings(group._id, {
+                                spamFilterEnabled: !group.spamFilterEnabled,
+                              })
+                            }
+                          >
+                            <ToggleRight className="w-4 h-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Toggle spam detection</TooltipContent>
+                      </Tooltip>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => handleMuteUser(group._id)}>
-                        <BellOff className="w-4 h-4" />
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleRemoveUser(group._id)}>
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDeleteGroup(group._id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="outline" size="sm" onClick={() => handleMuteUser(group._id)}>
+                            <BellOff className="w-4 h-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Mute user by ID</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="outline" size="sm" onClick={() => handleRemoveUser(group._id)}>
+                            <Users className="w-4 h-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Remove user from group</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeleteGroup(group._id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Delete this group</TooltipContent>
+                      </Tooltip>
                     </div>
                   </td>
                 </tr>
@@ -742,8 +817,9 @@ function AdminDashboard() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
+    <TooltipProvider>
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-7xl mx-auto">
         <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Super Admin Dashboard</h1>
@@ -799,19 +875,19 @@ function AdminDashboard() {
           </div>
         </div>
 
-        {loading ? (
-          <div className="text-center py-12">
-            <p className="text-gray-600">Loading...</p>
-          </div>
-        ) : (
-          <>
-            {activeTab === "dashboard" && renderDashboard()}
-            {activeTab === "users" && renderUsers()}
-            {activeTab === "courses" && renderCourses()}
-            {activeTab === "groups" && renderGroups()}
-          </>
-        )}
-      </div>
+          {loading ? (
+            <div className="text-center py-12">
+              <p className="text-gray-600">Loading...</p>
+            </div>
+          ) : (
+            <>
+              {activeTab === "dashboard" && renderDashboard()}
+              {activeTab === "users" && renderUsers()}
+              {activeTab === "courses" && renderCourses()}
+              {activeTab === "groups" && renderGroups()}
+            </>
+          )}
+        </div>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}>
@@ -864,7 +940,8 @@ function AdminDashboard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </TooltipProvider>
   );
 }
 

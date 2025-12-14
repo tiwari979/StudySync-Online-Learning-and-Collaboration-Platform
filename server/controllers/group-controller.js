@@ -302,9 +302,6 @@ const postMessage = async (req, res) => {
     const group = await findGroupAndEnsureMember(groupId, userId, res);
     if (!group) return;
 
-    const group = await findGroupAndEnsureMember(groupId, userId, res);
-    if (!group) return;
-
     if (group.chatDisabled) {
       return res.status(403).json({ success: false, message: "Chat is temporarily disabled by admin" });
     }

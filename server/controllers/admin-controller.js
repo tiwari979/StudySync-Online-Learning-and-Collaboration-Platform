@@ -21,23 +21,25 @@ const generateJoinCode = async () => {
 const getUsersAdmin = async (req, res) => {
   try {
     const users = await User.find({}).select("-password");
-    
+
     // Get additional stats for each user
     const usersWithStats = await Promise.all(
       users.map(async (user) => {
+        const normalizedRole = user.role === "user" ? "student" : user.role;
         let stats = {};
-        
-        if (user.role === "instructor") {
+
+        if (normalizedRole === "instructor") {
           const coursesCount = await Course.countDocuments({ instructorId: user._id });
           stats.coursesCreated = coursesCount;
-        } else if (user.role === "student") {
+        } else if (normalizedRole === "student") {
           const studentCourses = await StudentCourses.findOne({ userId: user._id });
           stats.coursesEnrolled = studentCourses ? studentCourses.courses.length : 0;
         }
-        
+
         return {
           ...user.toObject(),
-          ...stats
+          role: normalizedRole,
+          ...stats,
         };
       })
     );
@@ -221,7 +223,7 @@ const getSystemStats = async (req, res) => {
   try {
     const totalUsers = await User.countDocuments();
     const totalInstructors = await User.countDocuments({ role: "instructor" });
-    const totalStudents = await User.countDocuments({ role: "student" });
+    const totalStudents = await User.countDocuments({ role: { $in: ["student", "user"] } });
     const totalCourses = await Course.countDocuments();
     const totalOrders = await Order.countDocuments();
     
@@ -230,10 +232,15 @@ const getSystemStats = async (req, res) => {
     const totalRevenue = orders.reduce((sum, order) => sum + (order.orderPrice || 0), 0);
     
     // Get recent activity
-    const recentUsers = await User.find({})
+    const recentUsersRaw = await User.find({})
       .select("-password")
       .sort({ _id: -1 })
       .limit(5);
+
+    const recentUsers = recentUsersRaw.map((user) => ({
+      ...user.toObject(),
+      role: user.role === "user" ? "student" : user.role,
+    }));
     
     const recentCourses = await Course.find({})
       .populate("instructorId", "userName")
