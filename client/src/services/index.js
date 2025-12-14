@@ -306,3 +306,8 @@ export async function getCourseGroupByCourseService(courseId) {
   const { data } = await axiosInstance.get(`/groups/course/${courseId}`);
   return data;
 }
+
+export async function unenrollCourseService(courseId) {
+  const { data } = await axiosInstance.post(`/student/courses-bought/unenroll/${courseId}`);
+  return data;
+}
