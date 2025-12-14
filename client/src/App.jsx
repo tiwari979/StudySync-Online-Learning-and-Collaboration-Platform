@@ -16,6 +16,7 @@ import StudentViewCourseProgressPage from "./pages/student/course-progress";
 import StudentGroupsPage from "./pages/student/groups";
 import GroupDetailPage from "./pages/student/groups/group-detail";
 import ResetPasswordPage from "./pages/auth/reset-password";
+import AdminDashboard from "./pages/admin";
 
 function App() {
   const { auth } = useContext(AuthContext);
@@ -81,6 +82,16 @@ function App() {
         element={
           <RouteGuard
             element={<GroupDetailPage />}
+            authenticated={auth?.authenticate}
+            user={auth?.user}
+          />
+        }
+      />
+      <Route
+        path="/admin"
+        element={
+          <RouteGuard
+            element={<AdminDashboard />}
             authenticated={auth?.authenticate}
             user={auth?.user}
           />

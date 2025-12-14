@@ -12,6 +12,7 @@ const studentViewOrderRoutes = require("./routes/student-routes/order-routes");
 const studentCoursesRoutes = require("./routes/student-routes/student-courses-routes");
 const studentCourseProgressRoutes = require("./routes/student-routes/course-progress-routes");
 const groupRoutes = require("./routes/group-routes");
+const adminRoutes = require("./routes/admin-routes");
 const { setupSocketIO } = require("./socket/socket-handler");
 
 const app = express();
@@ -63,6 +64,7 @@ app.use("/student/order", studentViewOrderRoutes);
 app.use("/student/courses-bought", studentCoursesRoutes);
 app.use("/student/course-progress", studentCourseProgressRoutes);
 app.use("/groups", groupRoutes);
+app.use("/admin", adminRoutes);
 
 app.use((err, req, res, next) => {
   console.log(err.stack);

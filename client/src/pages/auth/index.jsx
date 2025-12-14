@@ -48,7 +48,10 @@ function AuthPage() {
     console.log("Auth page - full user object:", auth?.user);
     
     if (auth?.authenticate) {
-      if (auth?.user?.role === "instructor") {
+      if (auth?.user?.role === "superadmin") {
+        console.log("Redirecting to admin dashboard");
+        navigate("/admin", { replace: true });
+      } else if (auth?.user?.role === "instructor") {
         console.log("Redirecting to instructor dashboard");
         navigate("/instructor", { replace: true });
       } else {

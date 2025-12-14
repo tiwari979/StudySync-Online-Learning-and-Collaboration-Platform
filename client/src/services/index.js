@@ -311,3 +311,44 @@ export async function unenrollCourseService(courseId) {
   const { data } = await axiosInstance.post(`/student/courses-bought/unenroll/${courseId}`);
   return data;
 }
+
+// Admin services
+export async function getAdminStatsService() {
+  const { data } = await axiosInstance.get('/admin/stats');
+  return data;
+}
+
+export async function getAdminUsersService() {
+  const { data } = await axiosInstance.get('/admin/users');
+  return data;
+}
+
+export async function getAdminCoursesService() {
+  const { data } = await axiosInstance.get('/admin/courses');
+  return data;
+}
+
+export async function getAdminEnrollmentsService() {
+  const { data } = await axiosInstance.get('/admin/enrollments');
+  return data;
+}
+
+export async function deleteUserAdminService(userId) {
+  const { data } = await axiosInstance.delete(`/admin/users/${userId}`);
+  return data;
+}
+
+export async function updateUserRoleService(userId, role) {
+  const { data } = await axiosInstance.put(`/admin/users/${userId}/role`, { role });
+  return data;
+}
+
+export async function deleteCourseAdminService(courseId) {
+  const { data } = await axiosInstance.delete(`/admin/courses/${courseId}`);
+  return data;
+}
+
+export async function toggleCourseStatusService(courseId) {
+  const { data } = await axiosInstance.put(`/admin/courses/${courseId}/toggle`);
+  return data;
+}
