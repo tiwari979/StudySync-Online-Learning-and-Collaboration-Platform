@@ -47,6 +47,16 @@ function App() {
         }
       />
       <Route
+        path="/instructor/group/:groupId"
+        element={
+          <RouteGuard
+            element={<GroupDetailPage />}
+            authenticated={auth?.authenticate}
+            user={auth?.user}
+          />
+        }
+      />
+      <Route
         path="/instructor/create-new-course"
         element={
           <RouteGuard
@@ -61,6 +71,16 @@ function App() {
         element={
           <RouteGuard
             element={<AddNewCoursePage />}
+            authenticated={auth?.authenticate}
+            user={auth?.user}
+          />
+        }
+      />
+      <Route
+        path="/instructor/group/:groupId"
+        element={
+          <RouteGuard
+            element={<GroupDetailPage />}
             authenticated={auth?.authenticate}
             user={auth?.user}
           />

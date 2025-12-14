@@ -13,7 +13,11 @@ import {
   courseLandingInitialFormData,
 } from "@/config";
 import { InstructorContext } from "@/context/instructor-context";
-import { createCourseGroupService } from "@/services";
+import {
+  createCourseGroupService,
+  getCourseGroupByCourseService,
+  joinCourseGroupService,
+} from "@/services";
 import { useToast } from "@/hooks/use-toast";
 import { Copy, Delete, Edit } from "lucide-react";
 import { useContext } from "react";
@@ -28,35 +32,57 @@ function InstructorCourses({ listOfCourses }) {
   } = useContext(InstructorContext);
   const { toast } = useToast();
 
-  async function handleCreateGroup(course) {
+  async function handleEnsureGroupAndJoin(course) {
     try {
-      const response = await createCourseGroupService({
-        courseId: course?._id,
-        name: `${course?.title || "Course"} Group`,
-        description: course?.description || "",
-      });
+      // 1) Fetch existing course group (students already use this join code)
+      let groupResponse = null;
+      try {
+        groupResponse = await getCourseGroupByCourseService(course?._id);
+      } catch (err) {
+        // If not found, proceed to create; rethrow other errors
+        const status = err?.response?.status;
+        if (status && status !== 404) throw err;
+      }
 
-      if (response?.success) {
-        const joinCode = response?.data?.joinCode;
-        if (joinCode) {
-          await navigator.clipboard?.writeText(joinCode);
-        }
-        toast({
-          title: "Group ready",
-          description: joinCode
-            ? `Join code: ${joinCode} (copied to clipboard)`
-            : "Group created",
+      // 2) If not found, create one for this course
+      if (!groupResponse?.success || !groupResponse?.data) {
+        groupResponse = await createCourseGroupService({
+          courseId: course?._id,
+          name: `${course?.title || "Course"} Group`,
+          description: course?.description || "",
         });
-      } else {
-        toast({
-          title: "Failed to create group",
-          description: response?.message || "Unexpected error",
+      }
+
+      if (!groupResponse?.success || !groupResponse?.data) {
+        return toast({
+          title: "Group unavailable",
+          description: groupResponse?.message || "Could not load group for this course",
           variant: "destructive",
         });
       }
+
+      const group = groupResponse.data;
+
+      // 3) Ensure instructor is a member using the same join code students received
+      const joinCode = group?.joinCode;
+      if (joinCode) {
+        await joinCourseGroupService({ joinCode });
+        await navigator.clipboard?.writeText(joinCode);
+      }
+
+      toast({
+        title: "Group ready",
+        description: joinCode
+          ? `Join code: ${joinCode} (copied to clipboard)`
+          : "Group prepared",
+      });
+
+      if (group?._id) {
+        navigate(`/instructor/group/${group._id}`);
+      }
     } catch (error) {
       toast({
-        title: "Failed to create group",
+        title: "Group error",
         description: error?.response?.data?.message || error?.message,
         variant: "destructive",
       });
@@ -103,7 +129,7 @@ function InstructorCourses({ listOfCourses }) {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleCreateGroup(course)}
+                          onClick={() => handleEnsureGroupAndJoin(course)}
                         >
                           <Copy className="h-6 w-6" />
                         </Button>

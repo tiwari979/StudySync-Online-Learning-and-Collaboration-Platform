@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -90,6 +90,7 @@ function formatFileSize(bytes) {
 
 function GroupDetailPage() {
   const { groupId } = useParams();
+  const location = useLocation();
   const { auth } = useContext(AuthContext);
   const navigate = useNavigate();
   const [group, setGroup] = useState(null);
@@ -478,8 +479,19 @@ function GroupDetailPage() {
   const currentUserId = auth?.user?._id;
   const isOnline = onlineMembers.includes(currentUserId);
 
+  const isInstructorContext = location.pathname.startsWith("/instructor");
+
   return (
     <div className="max-w-6xl mx-auto p-4 space-y-4">
+      <div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate(isInstructorContext ? "/instructor?tab=messages" : "/groups")}
+        >
+          ← Back
+        </Button>
+      </div>
       {/* Group Header */}
       <Card>
         <CardHeader>

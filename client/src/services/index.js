@@ -301,3 +301,8 @@ export async function joinCourseGroupService(payload) {
   const { data } = await axiosInstance.post(`/groups/course/join`, payload);
   return data;
 }
+
+export async function getCourseGroupByCourseService(courseId) {
+  const { data } = await axiosInstance.get(`/groups/course/${courseId}`);
+  return data;
+}

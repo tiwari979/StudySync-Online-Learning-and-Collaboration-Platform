@@ -1,4 +1,5 @@
 import InstructorCourses from "@/components/instructor-view/courses";
+import InstructorMessaging from "@/components/instructor-view/messaging";
 import InstructorDashboard from "@/components/instructor-view/dashboard";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
@@ -8,11 +9,12 @@ import { fetchInstructorCourseListService } from "@/services";
 import { courseCurriculumInitialFormData, courseLandingInitialFormData } from "@/config";
 import { BarChart, Book, LogOut, Plus } from "lucide-react";
 import { useContext, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 function InstructorDashboardpage() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const navigate = useNavigate();
+  const location = useLocation();
   const { resetCredentials, auth } = useContext(AuthContext);
   const { 
     instructorCoursesList, 
@@ -31,6 +33,13 @@ function InstructorDashboardpage() {
     fetchAllCourses();
   }, []);
 
+  // Sync active tab from URL query param (?tab=messages)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get("tab");
+    if (tab) setActiveTab(tab);
+  }, [location.search]);
+
   const menuItems = [
     {
       icon: BarChart,
@@ -43,6 +52,12 @@ function InstructorDashboardpage() {
       label: "Courses",
       value: "courses",
       component: <InstructorCourses listOfCourses={instructorCoursesList} />,
+    },
+    {
+      icon: Book,
+      label: "Messages",
+      value: "messages",
+      component: <InstructorMessaging />,
     },
     {
       icon: LogOut,
