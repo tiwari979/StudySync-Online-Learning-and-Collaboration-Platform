@@ -13,7 +13,7 @@ import {
   mediaUploadService,
 } from "@/services";
 import { Upload } from "lucide-react";
-import { useContext, useRef } from "react";
+import { useContext, useRef, useState } from "react";
 
 function CourseCurriculum() {
   const {
@@ -26,14 +26,65 @@ function CourseCurriculum() {
   } = useContext(InstructorContext);
 
   const bulkUploadInputRef = useRef(null);
+  
+  // State for form visibility and inputs
+  const [addLectureMode, setAddLectureMode] = useState(false);
+  const [replaceVideoIndex, setReplaceVideoIndex] = useState(null);
+  const [youtubeUrlIndex, setYoutubeUrlIndex] = useState(null);
+  const [newLectureTitle, setNewLectureTitle] = useState("");
+  const [newLectureYoutubeUrl, setNewLectureYoutubeUrl] = useState("");
+  const [youtubeUrl, setYoutubeUrl] = useState("");
 
-  function handleNewLecture() {
-    setCourseCurriculumFormData([
-      ...courseCurriculumFormData,
-      {
-        ...courseCurriculumInitialFormData[0],
-      },
-    ]);
+  function handleOpenAddLectureForm() {
+    setAddLectureMode(true);
+  }
+
+  function handleCancelAddLecture() {
+    setAddLectureMode(false);
+    setNewLectureTitle("");
+    setNewLectureYoutubeUrl("");
+  }
+
+  function handleSaveNewLecture() {
+    if (newLectureTitle.trim() && newLectureYoutubeUrl.trim()) {
+      setCourseCurriculumFormData([
+        ...courseCurriculumFormData,
+        {
+          ...courseCurriculumInitialFormData[0],
+          title: newLectureTitle.trim(),
+          videoUrl: newLectureYoutubeUrl.trim(),
+          public_id: "", // YouTube URL has no public_id
+        },
+      ]);
+      handleCancelAddLecture();
+    }
+  }
+
+  function handleNewLectureFileUpload(event) {
+    const file = event.target.files?.[0];
+    if (file && newLectureTitle.trim()) {
+      // Handle file upload for new lecture
+      const formData = new FormData();
+      formData.append("file", file);
+
+      setMediaUploadProgress(true);
+      mediaUploadService(formData, setMediaUploadProgressPercentage)
+        .then((response) => {
+          if (response?.success) {
+            setCourseCurriculumFormData([
+              ...courseCurriculumFormData,
+              {
+                ...courseCurriculumInitialFormData[0],
+                title: newLectureTitle.trim(),
+                videoUrl: response?.data?.secure_url,
+                public_id: response?.data?.public_id,
+              },
+            ]);
+            handleCancelAddLecture();
+            setMediaUploadProgress(false);
+          }
+        });
+    }
   }
 
   function handleCourseTitleChange(event, currentIndex) {
@@ -175,15 +226,52 @@ function CourseCurriculum() {
     const getCurrentSelectedVideoPublicId =
       cpyCourseCurriculumFormData[currentIndex].public_id;
 
-    const response = await mediaDeleteService(getCurrentSelectedVideoPublicId);
+    if (getCurrentSelectedVideoPublicId) {
+      const response = await mediaDeleteService(getCurrentSelectedVideoPublicId);
 
-    if (response?.success) {
+      if (response?.success) {
+        cpyCourseCurriculumFormData = cpyCourseCurriculumFormData.filter(
+          (_, index) => index !== currentIndex
+        );
+
+        setCourseCurriculumFormData(cpyCourseCurriculumFormData);
+      }
+    } else {
+      // If no public_id, it's a YouTube URL, just delete it
       cpyCourseCurriculumFormData = cpyCourseCurriculumFormData.filter(
         (_, index) => index !== currentIndex
       );
-
       setCourseCurriculumFormData(cpyCourseCurriculumFormData);
     }
+  }
+
+  function handleAddYoutubeUrl(index) {
+    setYoutubeUrlIndex(index);
+  }
+
+  function handleSaveYoutubeUrl(index) {
+    if (youtubeUrl.trim()) {
+      let cpyCourseCurriculumFormData = [...courseCurriculumFormData];
+      cpyCourseCurriculumFormData[index] = {
+        ...cpyCourseCurriculumFormData[index],
+        videoUrl: youtubeUrl.trim(),
+        public_id: "", // YouTube URLs don't have public_id
+      };
+      setCourseCurriculumFormData(cpyCourseCurriculumFormData);
+      setYoutubeUrlIndex(null);
+      setYoutubeUrl("");
+      setReplaceVideoIndex(null);
+    }
+  }
+
+  function handleReplaceVideo(index) {
+    setReplaceVideoIndex(index);
+  }
+
+  function handleCancelReplace() {
+    setReplaceVideoIndex(null);
+    setYoutubeUrlIndex(null);
+    setYoutubeUrl("");
   }
 
   return (
@@ -213,12 +301,62 @@ function CourseCurriculum() {
         </div>
       </CardHeader>
       <CardContent>
-        <Button
-          disabled={!isCourseCurriculumFormDataValid() || mediaUploadProgress}
-          onClick={handleNewLecture}
-        >
-          Add Lecture
-        </Button>
+        {addLectureMode ? (
+          <div className="border-2 border-green-400 p-4 rounded-lg space-y-4 mb-6">
+            <p className="text-sm font-semibold">Add New Lecture</p>
+            
+            <div className="space-y-2">
+              <Label className="block">Lecture Title</Label>
+              <Input
+                type="text"
+                placeholder="Enter lecture title"
+                value={newLectureTitle}
+                onChange={(e) => setNewLectureTitle(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="block">Option 1: Upload Video from Local System</Label>
+              <Input
+                type="file"
+                accept="video/*"
+                onChange={handleNewLectureFileUpload}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="block">Option 2: Enter YouTube URL</Label>
+              <Input
+                type="text"
+                placeholder="Paste YouTube URL here (e.g., https://www.youtube.com/watch?v=...)"
+                value={newLectureYoutubeUrl}
+                onChange={(e) => setNewLectureYoutubeUrl(e.target.value)}
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <Button 
+                onClick={handleSaveNewLecture}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                Add Lecture
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleCancelAddLecture}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button
+            onClick={handleOpenAddLectureForm}
+            className="mb-6"
+          >
+            + Add New Lecture
+          </Button>
+        )}
         {mediaUploadProgress ? (
           <MediaProgressbar
             isMediaUploading={mediaUploadProgress}
@@ -251,32 +389,93 @@ function CourseCurriculum() {
                 </div>
               </div>
               <div className="mt-6">
-                {courseCurriculumFormData[index]?.videoUrl ? (
+                {replaceVideoIndex === index ? (
+                  <div className="border-2 border-blue-400 p-4 rounded-lg space-y-4">
+                    <p className="text-sm font-semibold">Replace Video - Choose an option:</p>
+                    
+                    <div className="space-y-2">
+                      <Label className="block">Option 1: Upload from Local System</Label>
+                      <Input
+                        type="file"
+                        accept="video/*"
+                        onChange={(event) =>
+                          handleSingleLectureUpload(event, index)
+                        }
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="block">Option 2: Enter YouTube URL</Label>
+                      <Input
+                        type="text"
+                        placeholder="Paste YouTube URL here (e.g., https://www.youtube.com/watch?v=...)"
+                        value={youtubeUrl}
+                        onChange={(e) => setYoutubeUrl(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button 
+                        onClick={() => {
+                          if (youtubeUrl.trim()) {
+                            handleSaveYoutubeUrl(index);
+                          } else {
+                            handleCancelReplace();
+                          }
+                        }}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        Save Changes
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={handleCancelReplace}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : courseCurriculumFormData[index]?.videoUrl ? (
                   <div className="flex gap-3">
                     <VideoPlayer
                       url={courseCurriculumFormData[index]?.videoUrl}
                       width="450px"
                       height="200px"
                     />
-                    <Button onClick={() => handleReplaceVideo(index)}>
-                      Replace Video
-                    </Button>
-                    <Button
-                      onClick={() => handleDeleteLecture(index)}
-                      className="bg-red-900"
-                    >
-                      Delete Lecture
-                    </Button>
+                    <div className="flex flex-col gap-2">
+                      <Button onClick={() => handleReplaceVideo(index)}>
+                        Replace Video
+                      </Button>
+                      <Button
+                        onClick={() => handleDeleteLecture(index)}
+                        className="bg-red-900"
+                      >
+                        Delete Lecture
+                      </Button>
+                    </div>
                   </div>
                 ) : (
-                  <Input
-                    type="file"
-                    accept="video/*"
-                    onChange={(event) =>
-                      handleSingleLectureUpload(event, index)
-                    }
-                    className="mb-4"
-                  />
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="block mb-2">Add Video</Label>
+                      <div className="flex gap-3">
+                        <Input
+                          type="file"
+                          accept="video/*"
+                          onChange={(event) =>
+                            handleSingleLectureUpload(event, index)
+                          }
+                          className="flex-1"
+                        />
+                        <Button
+                          variant="outline"
+                          onClick={() => handleAddYoutubeUrl(index)}
+                        >
+                          Add YouTube URL
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>

@@ -188,8 +188,9 @@ function StudentViewCourseProgressPage() {
                   {studentCurrentCourseProgress?.courseDetails?.curriculum.map(
                     (item) => (
                       <div
-                        className="flex items-center space-x-2 text-sm text-white font-bold cursor-pointer"
+                        className="flex items-center space-x-2 text-sm text-white font-bold cursor-pointer hover:bg-gray-800 p-2 rounded transition-colors"
                         key={item._id}
+                        onClick={() => setCurrentLecture(item)}
                       >
                         {studentCurrentCourseProgress?.progress?.find(
                           (progressItem) => progressItem.lectureId === item._id

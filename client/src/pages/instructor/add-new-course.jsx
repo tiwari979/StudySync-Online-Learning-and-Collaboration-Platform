@@ -15,8 +15,9 @@ import {
   fetchInstructorCourseDetailsService,
   updateCourseByIdService,
 } from "@/services";
-import { useContext, useEffect } from "react";
+import { useContext, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 function AddNewCoursePage() {
   const {
@@ -31,6 +32,8 @@ function AddNewCoursePage() {
   const { auth } = useContext(AuthContext);
   const navigate = useNavigate();
   const params = useParams();
+  const { toast } = useToast();
+  const [existingCourseData, setExistingCourseData] = useState(null);
 
   console.log(params);
 
@@ -54,11 +57,15 @@ function AddNewCoursePage() {
     for (const item of courseCurriculumFormData) {
       if (
         isEmpty(item.title) ||
-        isEmpty(item.videoUrl) ||
-        isEmpty(item.public_id)
+        isEmpty(item.videoUrl)
       ) {
         return false;
       }
+
+      // public_id is optional (YouTube URLs won't have it)
+      // if (isEmpty(item.public_id)) {
+      //   return false;
+      // }
 
       if (item.freePreview) {
         hasFreePreview = true; //found at least one free preview
@@ -72,9 +79,11 @@ function AddNewCoursePage() {
     const courseFinalFormData = {
       instructorId: auth?.user?._id,
       instructorName: auth?.user?.userName,
-      date: new Date(),
+      date: currentEditedCourseId !== null ? existingCourseData?.date : new Date(),
       ...courseLandingFormData,
-      students: [],
+      students: currentEditedCourseId !== null 
+        ? existingCourseData?.students || []
+        : [],
       curriculum: courseCurriculumFormData,
       isPublised: true,
     };
@@ -88,10 +97,22 @@ function AddNewCoursePage() {
         : await addNewCourseService(courseFinalFormData);
 
     if (response?.success) {
+      toast({
+        title: currentEditedCourseId ? "Course Updated" : "Course Created",
+        description: currentEditedCourseId 
+          ? "Your course has been updated successfully with all changes saved!" 
+          : "Your new course has been created successfully!",
+      });
       setCourseLandingFormData(courseLandingInitialFormData);
       setCourseCurriculumFormData(courseCurriculumInitialFormData);
-      navigate(-1);
       setCurrentEditedCourseId(null);
+      navigate(-1);
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to save the course. Please try again.",
+        variant: "destructive",
+      });
     }
 
     console.log(courseFinalFormData, "courseFinalFormData");
@@ -103,6 +124,9 @@ function AddNewCoursePage() {
     );
 
     if (response?.success) {
+      // Store the entire course data to preserve students and other info
+      setExistingCourseData(response?.data);
+
       const setCourseFormData = Object.keys(
         courseLandingInitialFormData
       ).reduce((acc, key) => {
