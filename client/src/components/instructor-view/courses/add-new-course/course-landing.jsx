@@ -15,6 +15,7 @@ function CourseLanding() {
     useContext(InstructorContext);
   const [uploadProgress, setUploadProgress] = useState(false);
   const [uploadPercentage, setUploadPercentage] = useState(0);
+  const [imageUrlInput, setImageUrlInput] = useState("");
   const fileInputRef = useRef(null);
 
   async function handleImageUpload(event) {
@@ -33,7 +34,8 @@ function CourseLanding() {
         if (response.success) {
           setCourseLandingFormData({
             ...courseLandingFormData,
-            image: response?.data?.url,
+            // Cloudinary returns secure_url for images; fall back to url if needed
+            image: response?.data?.secure_url || response?.data?.url,
           });
           setUploadProgress(false);
         }
@@ -46,6 +48,15 @@ function CourseLanding() {
 
   function handleImageClick() {
     fileInputRef.current?.click();
+  }
+
+  function handleImageUrlSave() {
+    if (!imageUrlInput.trim()) return;
+    setCourseLandingFormData({
+      ...courseLandingFormData,
+      image: imageUrlInput.trim(),
+    });
+    setImageUrlInput("");
   }
 
   return (
@@ -99,6 +110,22 @@ function CourseLanding() {
               )}
             </div>
           )}
+
+          {/* Manual image URL entry */}
+          <div className="mt-4 space-y-2">
+            <Label className="text-gray-700">Or paste an image URL</Label>
+            <div className="flex gap-2">
+              <Input
+                type="url"
+                placeholder="https://example.com/your-image.jpg"
+                value={imageUrlInput}
+                onChange={(e) => setImageUrlInput(e.target.value)}
+              />
+              <Button type="button" onClick={handleImageUrlSave} disabled={!imageUrlInput.trim()}>
+                Use Image URL
+              </Button>
+            </div>
+          </div>
         </div>
 
         {/* Form Controls */}
