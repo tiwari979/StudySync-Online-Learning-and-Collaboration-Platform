@@ -25,10 +25,11 @@ import { useToast } from "@/hooks/use-toast";
 import { Check, ChevronLeft, ChevronRight, Play, Copy } from "lucide-react";
 import { useContext, useEffect, useState } from "react";
 import Confetti from "react-confetti";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 
 function StudentViewCourseProgressPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { auth } = useContext(AuthContext);
   const { studentCurrentCourseProgress, setStudentCurrentCourseProgress } =
     useContext(StudentContext);
@@ -158,6 +159,21 @@ function StudentViewCourseProgressPage() {
   useEffect(() => {
     fetchCurrentCourseProgress();
   }, [id]);
+
+  // Handle resume from query param
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const lectureId = params.get('lecture');
+    
+    if (lectureId && studentCurrentCourseProgress?.courseDetails?.curriculum) {
+      const lecture = studentCurrentCourseProgress.courseDetails.curriculum.find(
+        lec => lec._id === lectureId
+      );
+      if (lecture) {
+        setCurrentLecture(lecture);
+      }
+    }
+  }, [location.search, studentCurrentCourseProgress?.courseDetails]);
 
   useEffect(() => {
     if (currentLecture?.progressValue === 1) updateCourseProgress();

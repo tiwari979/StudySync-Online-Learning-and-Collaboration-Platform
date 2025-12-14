@@ -31,6 +31,12 @@ function VideoPlayer({
   const playerRef = useRef(null);
   const playerContainerRef = useRef(null);
   const controlsTimeoutRef = useRef(null);
+  const progressUpdatedRef = useRef(false);
+
+  // Reset progress flag when video changes
+  useEffect(() => {
+    progressUpdatedRef.current = false;
+  }, [url]);
 
   function handlePlayAndPause() {
     setPlaying(!playing);
@@ -39,6 +45,15 @@ function VideoPlayer({
   function handleProgress(state) {
     if (!seeking) {
       setPlayed(state.played);
+      
+      // Mark as viewed when 90% watched (only once per video)
+      if (state.played >= 0.9 && onProgressUpdate && progressData && !progressUpdatedRef.current) {
+        progressUpdatedRef.current = true;
+        onProgressUpdate({
+          ...progressData,
+          progressValue: 1
+        });
+      }
     }
   }
 
