@@ -275,6 +275,20 @@ const getGroupDetails = async (req, res) => {
   }
 };
 
+const badWords = ["badword", "spam", "abuse"];
+
+const hasProfanity = (text) => {
+  const lower = text.toLowerCase();
+  return badWords.some((w) => lower.includes(w));
+};
+
+const isSpammy = (text) => {
+  if (!text) return false;
+  if (text.length > 2000) return true;
+  const repeated = /(.)\1{10,}/; // long repeated chars
+  return repeated.test(text);
+};
+
 const postMessage = async (req, res) => {
   try {
     const { groupId } = req.params;
@@ -288,10 +302,34 @@ const postMessage = async (req, res) => {
     const group = await findGroupAndEnsureMember(groupId, userId, res);
     if (!group) return;
 
+    const group = await findGroupAndEnsureMember(groupId, userId, res);
+    if (!group) return;
+
+    if (group.chatDisabled) {
+      return res.status(403).json({ success: false, message: "Chat is temporarily disabled by admin" });
+    }
+
+    const muted = group.mutedUsers.find((m) => m.userId.toString() === userId.toString());
+    if (muted) {
+      const now = new Date();
+      if (!muted.mutedUntil || new Date(muted.mutedUntil) > now) {
+        return res.status(403).json({ success: false, message: "You are muted in this group" });
+      }
+    }
+
+    const cleanText = text.trim();
+    if (group.profanityFilterEnabled && hasProfanity(cleanText)) {
+      return res.status(400).json({ success: false, message: "Message blocked by profanity filter" });
+    }
+
+    if (group.spamFilterEnabled && isSpammy(cleanText)) {
+      return res.status(400).json({ success: false, message: "Message flagged as spam" });
+    }
+
     const message = await GroupMessage.create({
       groupId,
       senderId: userId,
-      text: text.trim(),
+      text: cleanText,
     });
 
     return res

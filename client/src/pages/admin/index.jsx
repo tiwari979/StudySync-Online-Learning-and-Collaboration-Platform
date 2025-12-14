@@ -16,7 +16,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
+import { useNavigate } from "react-router-dom";
+import { AuthContext } from "@/context/auth-context";
 import {
   getAdminStatsService,
   getAdminUsersService,
@@ -25,21 +27,44 @@ import {
   updateUserRoleService,
   deleteCourseAdminService,
   toggleCourseStatusService,
+  updateUserStatusService,
+  approveCourseAdminService,
+  rejectCourseAdminService,
+  assignInstructorAdminService,
+  editCourseAdminService,
+  getAdminGroupsService,
+  createAdminGroupService,
+  deleteAdminGroupService,
+  deleteAdminGroupMessageService,
+  muteUserAdminGroupService,
+  removeUserAdminGroupService,
+  toggleGroupSettingsAdminService,
 } from "@/services";
-import { Users, BookOpen, DollarSign, ShoppingCart, Trash2, Edit, ToggleLeft, ToggleRight } from "lucide-react";
+import { Users, BookOpen, DollarSign, ShoppingCart, Trash2, Edit, ToggleLeft, ToggleRight, ShieldOff, ShieldCheck, Check, X, MessageCircleWarning, BellOff, Bell } from "lucide-react";
 
 function AdminDashboard() {
+  const navigate = useNavigate();
+  const { resetCredentials } = useContext(AuthContext);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
   const [courses, setCourses] = useState([]);
+  const [groups, setGroups] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterRole, setFilterRole] = useState("all");
   const [loading, setLoading] = useState(false);
+  const [newGroup, setNewGroup] = useState({ name: "", description: "" });
+  const [moderationMessageId, setModerationMessageId] = useState("");
 
   // Dialog states
   const [deleteDialog, setDeleteDialog] = useState({ open: false, type: "", id: "", name: "" });
   const [roleDialog, setRoleDialog] = useState({ open: false, userId: "", currentRole: "", newRole: "" });
+
+  const handleLogout = () => {
+    resetCredentials();
+    sessionStorage.clear();
+    navigate("/auth");
+  };
 
   useEffect(() => {
     if (activeTab === "dashboard") {
@@ -48,6 +73,8 @@ function AdminDashboard() {
       fetchUsers();
     } else if (activeTab === "courses") {
       fetchCourses();
+    } else if (activeTab === "groups") {
+      fetchGroups();
     }
   }, [activeTab]);
 
@@ -90,6 +117,148 @@ function AdminDashboard() {
       console.error("Error fetching courses:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchGroups = async () => {
+    setLoading(true);
+    try {
+      const response = await getAdminGroupsService();
+      if (response.success) {
+        setGroups(response.data);
+      }
+    } catch (error) {
+      console.error("Error fetching groups:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUserStatus = async (userId, status) => {
+    try {
+      const response = await updateUserStatusService(userId, { status });
+      if (response.success) {
+        fetchUsers();
+      }
+    } catch (error) {
+      console.error("Error updating user status:", error);
+    }
+  };
+
+  const handleCourseApprove = async (courseId) => {
+    try {
+      const response = await approveCourseAdminService(courseId);
+      if (response.success) {
+        fetchCourses();
+      }
+    } catch (error) {
+      console.error("Error approving course:", error);
+    }
+  };
+
+  const handleCourseReject = async (courseId) => {
+    try {
+      const notes = prompt("Reason for rejection?", "Incomplete content");
+      const response = await rejectCourseAdminService(courseId, notes || "");
+      if (response.success) {
+        fetchCourses();
+      }
+    } catch (error) {
+      console.error("Error rejecting course:", error);
+    }
+  };
+
+  const handleAssignInstructor = async (courseId) => {
+    const instructorId = prompt("Enter instructor userId to assign:");
+    if (!instructorId) return;
+    try {
+      const response = await assignInstructorAdminService(courseId, instructorId);
+      if (response.success) {
+        fetchCourses();
+      }
+    } catch (error) {
+      console.error("Error assigning instructor:", error);
+    }
+  };
+
+  const handleEditCourse = async (courseId) => {
+    const title = prompt("New course title (leave blank to skip):");
+    const payload = {};
+    if (title) payload.title = title;
+    if (Object.keys(payload).length === 0) return;
+    try {
+      const response = await editCourseAdminService(courseId, payload);
+      if (response.success) fetchCourses();
+    } catch (error) {
+      console.error("Error editing course:", error);
+    }
+  };
+
+  const handleCreateGroup = async () => {
+    if (!newGroup.name) return;
+    try {
+      const response = await createAdminGroupService(newGroup);
+      if (response.success) {
+        setNewGroup({ name: "", description: "" });
+        fetchGroups();
+      }
+    } catch (error) {
+      console.error("Error creating group:", error);
+    }
+  };
+
+  const handleToggleGroupSettings = async (groupId, updates) => {
+    try {
+      const response = await toggleGroupSettingsAdminService(groupId, updates);
+      if (response.success) fetchGroups();
+    } catch (error) {
+      console.error("Error updating group settings:", error);
+    }
+  };
+
+  const handleMuteUser = async (groupId) => {
+    const userId = prompt("User ID to mute:");
+    if (!userId) return;
+    const minutes = prompt("Mute duration in minutes (blank for indefinite):");
+    const mutedUntil = minutes ? new Date(Date.now() + Number(minutes) * 60000) : null;
+    try {
+      const response = await muteUserAdminGroupService(groupId, userId, { mutedUntil });
+      if (response.success) fetchGroups();
+    } catch (error) {
+      console.error("Error muting user:", error);
+    }
+  };
+
+  const handleRemoveUser = async (groupId) => {
+    const userId = prompt("User ID to remove:");
+    if (!userId) return;
+    const reason = prompt("Reason (optional):", "policy violation") || "";
+    try {
+      const response = await removeUserAdminGroupService(groupId, userId, { reason });
+      if (response.success) fetchGroups();
+    } catch (error) {
+      console.error("Error removing user:", error);
+    }
+  };
+
+  const handleDeleteGroup = async (groupId) => {
+    try {
+      const response = await deleteAdminGroupService(groupId);
+      if (response.success) fetchGroups();
+    } catch (error) {
+      console.error("Error deleting group:", error);
+    }
+  };
+
+  const handleDeleteMessage = async () => {
+    if (!moderationMessageId) return;
+    try {
+      const response = await deleteAdminGroupMessageService(moderationMessageId);
+      if (response.success) {
+        setModerationMessageId("");
+      }
+    } catch (error) {
+      console.error("Error deleting message:", error);
     }
   };
 
@@ -259,6 +428,7 @@ function AdminDashboard() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stats</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
               </tr>
@@ -281,6 +451,7 @@ function AdminDashboard() {
                       {user.role}
                     </span>
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 capitalize">{user.status || "active"}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                     {user.role === "instructor" && `${user.coursesCreated || 0} courses`}
                     {user.role === "student" && `${user.coursesEnrolled || 0} enrolled`}
@@ -300,6 +471,27 @@ function AdminDashboard() {
                         }
                       >
                         <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleUserStatus(user._id, "suspended")}
+                      >
+                        <ShieldOff className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleUserStatus(user._id, "banned")}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleUserStatus(user._id, "active")}
+                      >
+                        <ShieldCheck className="w-4 h-4" />
                       </Button>
                       <Button
                         variant="destructive"
@@ -344,6 +536,7 @@ function AdminDashboard() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Students</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Approval</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
               </tr>
@@ -358,6 +551,9 @@ function AdminDashboard() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{course.category}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${course.pricing}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{course.studentsCount}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 capitalize">
+                    {course.approvalStatus || "pending"}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
                       className={`px-2 py-1 text-xs rounded-full ${
@@ -371,6 +567,34 @@ function AdminDashboard() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleCourseApprove(course._id)}
+                      >
+                        <Check className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleCourseReject(course._id)}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleAssignInstructor(course._id)}
+                      >
+                        <Users className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditCourse(course._id)}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
                       <Button
                         variant="outline"
                         size="sm"
@@ -407,12 +631,127 @@ function AdminDashboard() {
     </div>
   );
 
+  const renderGroups = () => (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card className="p-4 space-y-3">
+          <h3 className="text-lg font-semibold">Create Group</h3>
+          <Input
+            placeholder="Group name"
+            value={newGroup.name}
+            onChange={(e) => setNewGroup({ ...newGroup, name: e.target.value })}
+          />
+          <Input
+            placeholder="Description"
+            value={newGroup.description}
+            onChange={(e) => setNewGroup({ ...newGroup, description: e.target.value })}
+          />
+          <Button onClick={handleCreateGroup}>Create</Button>
+        </Card>
+        <Card className="p-4 space-y-3">
+          <h3 className="text-lg font-semibold">Moderate Message</h3>
+          <Input
+            placeholder="Message ID to delete"
+            value={moderationMessageId}
+            onChange={(e) => setModerationMessageId(e.target.value)}
+          />
+          <Button variant="destructive" onClick={handleDeleteMessage}>Delete Message</Button>
+        </Card>
+      </div>
+
+      <Card>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Join Code</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Members</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Chat</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Filters</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {groups.map((group) => (
+                <tr key={group._id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap font-medium">{group.name}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{group.joinCode}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{group.membersCount}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        handleToggleGroupSettings(group._id, { chatDisabled: !group.chatDisabled })
+                      }
+                    >
+                      {group.chatDisabled ? <BellOff className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
+                    </Button>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          handleToggleGroupSettings(group._id, {
+                            profanityFilterEnabled: !group.profanityFilterEnabled,
+                          })
+                        }
+                      >
+                        <MessageCircleWarning className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          handleToggleGroupSettings(group._id, {
+                            spamFilterEnabled: !group.spamFilterEnabled,
+                          })
+                        }
+                      >
+                        <ToggleRight className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => handleMuteUser(group._id)}>
+                        <BellOff className="w-4 h-4" />
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => handleRemoveUser(group._id)}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDeleteGroup(group._id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Super Admin Dashboard</h1>
-          <p className="text-gray-600 mt-2">Manage users, courses, and monitor system statistics</p>
+        <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Super Admin Dashboard</h1>
+            <p className="text-gray-600 mt-2">Manage users, courses, and monitor system statistics</p>
+          </div>
+          <Button className="text-black bg-red-500" variant="outline" onClick={handleLogout}>
+            Sign Out
+          </Button>
         </div>
 
         <div className="mb-6">
@@ -447,6 +786,16 @@ function AdminDashboard() {
             >
               Courses
             </button>
+            <button
+              onClick={() => setActiveTab("groups")}
+              className={`px-4 py-2 font-medium ${
+                activeTab === "groups"
+                  ? "border-b-2 border-blue-500 text-blue-600"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Groups
+            </button>
           </div>
         </div>
 
@@ -459,6 +808,7 @@ function AdminDashboard() {
             {activeTab === "dashboard" && renderDashboard()}
             {activeTab === "users" && renderUsers()}
             {activeTab === "courses" && renderCourses()}
+            {activeTab === "groups" && renderGroups()}
           </>
         )}
       </div>

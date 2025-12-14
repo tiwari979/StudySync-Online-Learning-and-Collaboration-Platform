@@ -16,6 +16,21 @@ const GroupSchema = new mongoose.Schema(
         joinedAt: { type: Date, default: Date.now },
       },
     ],
+    mutedUsers: [
+      {
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        mutedUntil: { type: Date, default: null },
+      },
+    ],
+    removedUsers: [
+      {
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        reason: { type: String, default: "" },
+      },
+    ],
+    chatDisabled: { type: Boolean, default: false },
+    profanityFilterEnabled: { type: Boolean, default: false },
+    spamFilterEnabled: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

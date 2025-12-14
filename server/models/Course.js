@@ -10,6 +10,7 @@ const LectureSchema = new mongoose.Schema({
 const CourseSchema = new mongoose.Schema({
   instructorId: String,
   instructorName: String,
+  assignedInstructorId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   date: Date,
   title: String,
   category: String,
@@ -30,7 +31,14 @@ const CourseSchema = new mongoose.Schema({
     },
   ],
   curriculum: [LectureSchema],
-  isPublised: Boolean,
+    isPublised: Boolean,
+    isPublished: { type: Boolean, default: false },
+    approvalStatus: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
+    },
+    approvalNotes: { type: String, default: "" },
 });
 
 module.exports = mongoose.model("Course", CourseSchema);

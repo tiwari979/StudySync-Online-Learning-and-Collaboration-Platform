@@ -352,3 +352,63 @@ export async function toggleCourseStatusService(courseId) {
   const { data } = await axiosInstance.put(`/admin/courses/${courseId}/toggle`);
   return data;
 }
+
+export async function updateUserStatusService(userId, payload) {
+  const { data } = await axiosInstance.put(`/admin/users/${userId}/status`, payload);
+  return data;
+}
+
+export async function approveCourseAdminService(courseId, notes = "") {
+  const { data } = await axiosInstance.put(`/admin/courses/${courseId}/approve`, { notes });
+  return data;
+}
+
+export async function rejectCourseAdminService(courseId, notes = "") {
+  const { data } = await axiosInstance.put(`/admin/courses/${courseId}/reject`, { notes });
+  return data;
+}
+
+export async function assignInstructorAdminService(courseId, instructorId) {
+  const { data } = await axiosInstance.put(`/admin/courses/${courseId}/assign`, { instructorId });
+  return data;
+}
+
+export async function editCourseAdminService(courseId, payload) {
+  const { data } = await axiosInstance.put(`/admin/courses/${courseId}/edit`, payload);
+  return data;
+}
+
+export async function getAdminGroupsService() {
+  const { data } = await axiosInstance.get('/admin/groups');
+  return data;
+}
+
+export async function createAdminGroupService(payload) {
+  const { data } = await axiosInstance.post('/admin/groups', payload);
+  return data;
+}
+
+export async function deleteAdminGroupService(groupId) {
+  const { data } = await axiosInstance.delete(`/admin/groups/${groupId}`);
+  return data;
+}
+
+export async function deleteAdminGroupMessageService(messageId) {
+  const { data } = await axiosInstance.delete(`/admin/groups/messages/${messageId}`);
+  return data;
+}
+
+export async function muteUserAdminGroupService(groupId, userId, payload) {
+  const { data } = await axiosInstance.put(`/admin/groups/${groupId}/mute/${userId}`, payload);
+  return data;
+}
+
+export async function removeUserAdminGroupService(groupId, userId, payload) {
+  const { data } = await axiosInstance.put(`/admin/groups/${groupId}/remove/${userId}`, payload);
+  return data;
+}
+
+export async function toggleGroupSettingsAdminService(groupId, payload) {
+  const { data } = await axiosInstance.put(`/admin/groups/${groupId}/settings`, payload);
+  return data;
+}
