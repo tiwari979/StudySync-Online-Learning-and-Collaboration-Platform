@@ -184,4 +184,96 @@ const capturePaymentAndFinalizeOrder = async (req, res) => {
   }
 };
 
-module.exports = { createOrder, capturePaymentAndFinalizeOrder };
+// Direct enrollment without PayPal (bypass payment)
+const directEnrollCourse = async (req, res) => {
+  try {
+    const {
+      userId,
+      userName,
+      userEmail,
+      instructorId,
+      instructorName,
+      courseImage,
+      courseTitle,
+      courseId,
+      coursePricing,
+    } = req.body;
+
+    // Create order with "completed" status
+    const newOrder = new Order({
+      userId,
+      userName,
+      userEmail,
+      orderStatus: "confirmed",
+      paymentMethod: "direct",
+      paymentStatus: "paid",
+      orderDate: new Date(),
+      paymentId: "DIRECT_ENROLLMENT",
+      payerId: "SYSTEM",
+      instructorId,
+      instructorName,
+      courseImage,
+      courseTitle,
+      courseId,
+      coursePricing,
+    });
+
+    await newOrder.save();
+
+    // Update student courses
+    const studentCourses = await StudentCourses.findOne({ userId });
+
+    if (studentCourses) {
+      studentCourses.courses.push({
+        courseId,
+        title: courseTitle,
+        instructorId,
+        instructorName,
+        dateOfPurchase: new Date(),
+        courseImage,
+      });
+      await studentCourses.save();
+    } else {
+      const newStudentCourses = new StudentCourses({
+        userId,
+        courses: [
+          {
+            courseId,
+            title: courseTitle,
+            instructorId,
+            instructorName,
+            dateOfPurchase: new Date(),
+            courseImage,
+          },
+        ],
+      });
+      await newStudentCourses.save();
+    }
+
+    // Update course students list
+    await Course.findByIdAndUpdate(courseId, {
+      $addToSet: {
+        students: {
+          studentId: userId,
+          studentName: userName,
+          studentEmail: userEmail,
+          paidAmount: coursePricing,
+        },
+      },
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Successfully enrolled in course",
+      data: newOrder,
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({
+      success: false,
+      message: "Error enrolling in course",
+    });
+  }
+};
+
+module.exports = { createOrder, capturePaymentAndFinalizeOrder, directEnrollCourse };

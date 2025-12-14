@@ -126,14 +126,14 @@ function StudentViewCourseProgressPage() {
         <div className="flex items-center space-x-4">
           <Button
             onClick={() => navigate("/student-courses")}
-            className="text-black"
+            className="text-white hover:text-gray-300"
             variant="ghost"
             size="sm"
           >
             <ChevronLeft className="h-4 w-4 mr-2" />
             Back to My Courses Page
           </Button>
-          <h1 className="text-lg font-bold hidden md:block">
+          <h1 className="text-lg font-bold hidden md:block text-white">
             {studentCurrentCourseProgress?.courseDetails?.title}
           </h1>
         </div>
@@ -149,7 +149,7 @@ function StudentViewCourseProgressPage() {
         <div
           className={`flex-1 ${
             isSideBarOpen ? "mr-[400px]" : ""
-          } transition-all duration-300`}
+          } transition-all duration-300 bg-[#1c1d1f]`}
         >
           <VideoPlayer
             width="100%"
@@ -158,8 +158,8 @@ function StudentViewCourseProgressPage() {
             onProgressUpdate={setCurrentLecture}
             progressData={currentLecture}
           />
-          <div className="p-6 bg-[#1c1d1f]">
-            <h2 className="text-2xl font-bold mb-2">{currentLecture?.title}</h2>
+          <div className="p-6 bg-[#1c1d1f] border-t border-gray-700">
+            <h2 className="text-2xl font-bold mb-2 text-white">{currentLecture?.title}</h2>
           </div>
         </div>
         <div
@@ -168,16 +168,16 @@ function StudentViewCourseProgressPage() {
           }`}
         >
           <Tabs defaultValue="content" className="h-full flex flex-col">
-            <TabsList className="grid bg-[#1c1d1f] w-full grid-cols-2 p-0 h-14">
+            <TabsList className="grid bg-[#1c1d1f] w-full grid-cols-2 p-0 h-14 border-b border-gray-700">
               <TabsTrigger
                 value="content"
-                className=" text-black rounded-none h-full"
+                className="text-white rounded-none h-full hover:bg-gray-800"
               >
                 Course Content
               </TabsTrigger>
               <TabsTrigger
                 value="overview"
-                className=" text-black rounded-none h-full"
+                className="text-white rounded-none h-full hover:bg-gray-800"
               >
                 Overview
               </TabsTrigger>
@@ -208,8 +208,8 @@ function StudentViewCourseProgressPage() {
             <TabsContent value="overview" className="flex-1 overflow-hidden">
               <ScrollArea className="h-full">
                 <div className="p-4">
-                  <h2 className="text-xl font-bold mb-4">About this course</h2>
-                  <p className="text-gray-400">
+                  <h2 className="text-xl font-bold mb-4 text-white">About this course</h2>
+                  <p className="text-gray-300">
                     {studentCurrentCourseProgress?.courseDetails?.description}
                   </p>
                 </div>

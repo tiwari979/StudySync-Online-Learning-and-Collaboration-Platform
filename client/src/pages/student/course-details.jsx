@@ -6,15 +6,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   fetchStudentViewCourseDetailsService,
   checkCoursePurchaseInfoService,
-  createPaymentService,
+  directEnrollCourseService,
 } from "@/services";
 import { AuthContext } from "@/context/auth-context";
+import { useToast } from "@/hooks/use-toast";
 import { Star, Users, Clock, Award, Play } from "lucide-react";
 
 function StudentViewCourseDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { auth } = useContext(AuthContext);
+  const { toast } = useToast();
   const [courseDetails, setCourseDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isEnrolled, setIsEnrolled] = useState(false);
@@ -55,16 +57,10 @@ function StudentViewCourseDetailsPage() {
 
     try {
       setEnrolling(true);
-      const paymentPayload = {
+      const enrollData = {
         userId: auth?.user?._id,
         userName: auth?.user?.userName,
         userEmail: auth?.user?.userEmail,
-        orderStatus: "pending",
-        paymentMethod: "paypal",
-        paymentStatus: "pending",
-        orderDate: new Date(),
-        paymentId: "",
-        payerId: "",
         instructorId: courseDetails?.instructorId,
         instructorName: courseDetails?.instructorName,
         courseImage: courseDetails?.image,
@@ -73,30 +69,35 @@ function StudentViewCourseDetailsPage() {
         coursePricing: courseDetails?.pricing,
       };
 
-      const response = await createPaymentService(paymentPayload);
+      console.log("Sending enroll request with data:", enrollData);
+      const response = await directEnrollCourseService(enrollData);
+      console.log("Enroll response:", response);
 
       if (response?.success) {
-        // Redirect to PayPal approval URL
-        if (response?.data?.approveUrl) {
-          window.location.href = response.data.approveUrl;
-        } else if (response?.data?.links) {
-          const approvalUrl = response.data.links.find(
-            (link) => link.rel === "approval_url"
-          );
-          if (approvalUrl) {
-            window.location.href = approvalUrl.href;
-          }
-        } else {
-          alert("Payment URL not found. Please try again.");
-        }
+        toast({
+          title: "Success! 🎉",
+          description: "You have successfully enrolled in this course. Redirecting to course...",
+        });
+        // Refresh course details to update enrolled status
+        await fetchCourseDetails();
+        // Redirect to course progress page
+        setTimeout(() => {
+          navigate(`/course-progress/${courseDetails?._id}`);
+        }, 1500);
       } else {
-        alert(response?.message || "Failed to initiate payment");
+        toast({
+          title: "Enrollment Failed",
+          description: response?.message || "Failed to enroll in course",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Error during enrollment:", error);
-      alert(
-        error?.response?.data?.message || "Error initiating payment. Try again."
-      );
+      toast({
+        title: "Error",
+        description: error?.response?.data?.message || "Error enrolling in course. Try again.",
+        variant: "destructive",
+      });
     } finally {
       setEnrolling(false);
     }

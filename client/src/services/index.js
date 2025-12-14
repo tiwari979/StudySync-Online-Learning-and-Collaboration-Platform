@@ -142,6 +142,15 @@ export async function captureAndFinalizePaymentService(
   return data;
 }
 
+export async function directEnrollCourseService(enrollData) {
+  const { data } = await axiosInstance.post(
+    `/student/order/direct-enroll`,
+    enrollData
+  );
+
+  return data;
+}
+
 export async function fetchStudentBoughtCoursesService(studentId) {
   const { data } = await axiosInstance.get(
     `/student/courses-bought/get/${studentId}`

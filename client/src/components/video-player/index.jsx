@@ -134,17 +134,24 @@ function VideoPlayer({
       onMouseMove={handleMouseMove}
       onMouseLeave={() => setShowControls(false)}
     >
-      <ReactPlayer
-        ref={playerRef}
-        className="absolute top-0 left-0"
-        width="100%"
-        height="100%"
-        url={url}
-        playing={playing}
-        volume={volume}
-        muted={muted}
-        onProgress={handleProgress}
-      />
+      {url ? (
+        <ReactPlayer
+          ref={playerRef}
+          className="absolute top-0 left-0"
+          width="100%"
+          height="100%"
+          url={url}
+          playing={playing}
+          volume={volume}
+          muted={muted}
+          onProgress={handleProgress}
+          controls={false}
+        />
+      ) : (
+        <div className="flex items-center justify-center w-full h-full bg-gray-900 text-white">
+          <p className="text-lg font-semibold">No video available</p>
+        </div>
+      )}
       {showControls && (
         <div
           className={`absolute bottom-0 left-0 right-0 bg-gray-800 bg-opacity-75 p-4 transition-opacity duration-300 ${
