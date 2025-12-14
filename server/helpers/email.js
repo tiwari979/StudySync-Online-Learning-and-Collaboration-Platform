@@ -2,7 +2,7 @@ const nodemailer = require("nodemailer");
 const crypto = require("crypto");
 
 // Create reusable transporter
-const createTransporter = () => {
+const createTransporter = async () => {
   // For development, use Gmail or configure your SMTP server
   // For production, use a service like SendGrid, Mailgun, or AWS SES
   
@@ -17,27 +17,41 @@ const createTransporter = () => {
   }
 
   // Generic SMTP configuration
+  if (process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
+    return nodemailer.createTransport({
+      host: process.env.SMTP_HOST || "smtp.gmail.com",
+      port: process.env.SMTP_PORT || 587,
+      secure: false, // true for 465, false for other ports
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD,
+      },
+    });
+  }
+
+  // Development fallback: Ethereal test account (no real email required)
+  const testAccount = await nodemailer.createTestAccount();
   return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || "smtp.gmail.com",
-    port: process.env.SMTP_PORT || 587,
-    secure: false, // true for 465, false for other ports
+    host: "smtp.ethereal.email",
+    port: 587,
+    secure: false,
     auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASSWORD,
+      user: testAccount.user,
+      pass: testAccount.pass,
     },
   });
 };
 
 const sendPasswordResetEmail = async (userEmail, resetToken, userName) => {
   try {
-    const transporter = createTransporter();
+    const transporter = await createTransporter();
     const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
     const resetLink = `${clientUrl}/reset-password?token=${resetToken}`;
 
     const mailOptions = {
-      from: `"LMS Learn" <${process.env.EMAIL_USER}>`,
+      from: `"StudySync" <${process.env.EMAIL_USER}>`,
       to: userEmail,
-      subject: "Password Reset Request - LMS Learn",
+      subject: "Password Reset Request - StudySync",
       html: `
         <!DOCTYPE html>
         <html>
@@ -57,11 +71,11 @@ const sendPasswordResetEmail = async (userEmail, resetToken, userName) => {
         <body>
           <div class="container">
             <div class="header">
-              <h1>🔐 Password Reset Request</h1>
+              <h1>🔐 StudySync Password Reset</h1>
             </div>
             <div class="content">
               <p>Hello ${userName || "User"},</p>
-              <p>We received a request to reset your password for your LMS Learn account.</p>
+              <p>We received a request to reset your password for your StudySync account.</p>
               <p>Click the button below to reset your password:</p>
               <div style="text-align: center;">
                 <a href="${resetLink}" class="button">Reset Password</a>
@@ -79,7 +93,7 @@ const sendPasswordResetEmail = async (userEmail, resetToken, userName) => {
               <p>If you have any questions, please contact our support team.</p>
             </div>
             <div class="footer">
-              <p>© ${new Date().getFullYear()} LMS Learn. All rights reserved.</p>
+              <p>© ${new Date().getFullYear()} StudySync. All rights reserved.</p>
               <p>This is an automated email, please do not reply.</p>
             </div>
           </div>
@@ -87,11 +101,11 @@ const sendPasswordResetEmail = async (userEmail, resetToken, userName) => {
         </html>
       `,
       text: `
-        Password Reset Request - LMS Learn
+        Password Reset Request - StudySync
         
         Hello ${userName || "User"},
         
-        We received a request to reset your password for your LMS Learn account.
+        We received a request to reset your password for your StudySync account.
         
         Click the following link to reset your password:
         ${resetLink}
@@ -100,12 +114,19 @@ const sendPasswordResetEmail = async (userEmail, resetToken, userName) => {
         
         If you didn't request this, please ignore this email.
         
-        © ${new Date().getFullYear()} LMS Learn. All rights reserved.
+        © ${new Date().getFullYear()} StudySync. All rights reserved.
       `,
     };
 
     const info = await transporter.sendMail(mailOptions);
     console.log("Password reset email sent:", info.messageId);
+    // If using Ethereal, log the preview URL for testing
+    if (nodemailer.getTestMessageUrl) {
+      const previewUrl = nodemailer.getTestMessageUrl(info);
+      if (previewUrl) {
+        console.log("Preview URL (Ethereal):", previewUrl);
+      }
+    }
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error("Error sending password reset email:", error);
