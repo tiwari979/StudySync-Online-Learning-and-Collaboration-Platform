@@ -4,6 +4,47 @@ const Course = require("../../models/Course");
 const StudentCourses = require("../../models/StudentCourses");
 const Group = require("../../models/Group");
 
+// Generate unique join code for groups
+const generateJoinCode = async () => {
+  const createCode = () => Math.random().toString(36).substring(2, 8).toUpperCase();
+
+  while (true) {
+    const code = createCode();
+    const exists = await Group.findOne({ joinCode: code });
+    if (!exists) return code;
+  }
+};
+
+// Get or create course group
+const getOrCreateCourseGroup = async (courseId, instructorId, courseTitle) => {
+  try {
+    // Check if group already exists for this course
+    let group = await Group.findOne({ courseId });
+    
+    if (group) {
+      return group;
+    }
+
+    // Create new group if it doesn't exist
+    const joinCode = await generateJoinCode();
+    const newGroup = new Group({
+      name: `${courseTitle} Group`,
+      description: `Study group for ${courseTitle}`,
+      joinCode,
+      createdBy: instructorId,
+      members: [],
+      courseId,
+      active: true,
+    });
+
+    await newGroup.save();
+    return newGroup;
+  } catch (err) {
+    console.error("Error in getOrCreateCourseGroup:", err);
+    return null;
+  }
+};
+
 const createOrder = async (req, res) => {
   try {
     const {
@@ -171,15 +212,20 @@ const capturePaymentAndFinalizeOrder = async (req, res) => {
       },
     });
 
-    // Get course group join code
+    // Get or create course group and get join code
     let groupJoinCode = null;
     try {
-      const group = await Group.findOne({ courseId: order.courseId });
+      const course = await Course.findById(order.courseId);
+      const group = await getOrCreateCourseGroup(
+        order.courseId,
+        order.instructorId,
+        order.courseTitle
+      );
       if (group) {
         groupJoinCode = group.joinCode;
       }
     } catch (err) {
-      console.log("Error fetching group join code:", err);
+      console.log("Error fetching/creating group join code:", err);
     }
 
     res.status(200).json({
@@ -275,15 +321,19 @@ const directEnrollCourse = async (req, res) => {
       },
     });
 
-    // Get course group join code
+    // Get or create course group and get join code
     let groupJoinCode = null;
     try {
-      const group = await Group.findOne({ courseId });
+      const group = await getOrCreateCourseGroup(
+        courseId,
+        instructorId,
+        courseTitle
+      );
       if (group) {
         groupJoinCode = group.joinCode;
       }
     } catch (err) {
-      console.log("Error fetching group join code:", err);
+      console.log("Error fetching/creating group join code:", err);
     }
 
     res.status(201).json({

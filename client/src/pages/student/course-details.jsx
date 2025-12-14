@@ -4,6 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   fetchStudentViewCourseDetailsService,
   checkCoursePurchaseInfoService,
   directEnrollCourseService,
@@ -349,6 +356,54 @@ function StudentViewCourseDetailsPage() {
           </Card>
         </div>
       )}
+
+      {/* Group Code Modal */}
+      <Dialog open={showGroupCode} onOpenChange={setShowGroupCode}>
+        <DialogContent className="sm:w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-green-600">🎉 Welcome to the Course!</DialogTitle>
+            <DialogDescription>
+              You've been enrolled successfully. Here's your group join code.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="bg-blue-50 p-6 rounded-lg border-2 border-blue-300 text-center">
+              <p className="text-sm font-medium text-gray-600 mb-3">Your Group Join Code</p>
+              <p className="text-4xl font-bold tracking-widest text-blue-600 mb-4">{groupCode}</p>
+              <Button
+                onClick={async () => {
+                  if (groupCode) {
+                    await navigator.clipboard?.writeText(groupCode);
+                    toast({
+                      title: "Copied!",
+                      description: "Join code copied to clipboard",
+                    });
+                  }
+                }}
+                variant="outline"
+                className="w-full"
+              >
+                <Copy className="h-4 w-4 mr-2" />
+                Copy Code
+              </Button>
+            </div>
+            <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
+              <p className="text-xs text-amber-800">
+                💡 <strong>Tip:</strong> Share this code with your classmates to join the group chat. You can also find it anytime in the "Group" tab of your course.
+              </p>
+            </div>
+            <Button
+              onClick={() => {
+                setShowGroupCode(false);
+                navigate(`/course-progress/${courseDetails?._id}`);
+              }}
+              className="w-full bg-green-600 hover:bg-green-700"
+            >
+              Go to Course
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
