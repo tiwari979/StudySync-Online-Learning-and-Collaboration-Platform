@@ -1,4 +1,4 @@
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, useLocation } from "react-router-dom";
 import AuthPage from "./pages/auth";
 import RouteGuard from "./components/route-guard";
 import { useContext } from "react";
@@ -17,12 +17,21 @@ import StudentGroupsPage from "./pages/student/groups";
 import GroupDetailPage from "./pages/student/groups/group-detail";
 import ResetPasswordPage from "./pages/auth/reset-password";
 import AdminDashboard from "./pages/admin";
+import ChatbotWidget from "./components/chatbot/ChatbotWidget";
 
 function App() {
   const { auth } = useContext(AuthContext);
+  const location = useLocation();
+  const hideChatbot = 
+    location.pathname.startsWith("/auth") || 
+    location.pathname.startsWith("/reset-password") ||
+    location.pathname.startsWith("/instructor") ||
+    location.pathname.startsWith("/admin");
 
   return (
-    <Routes>
+    <>
+      {!hideChatbot && <ChatbotWidget />}
+      <Routes>
       <Route
         path="/auth"
         element={
@@ -125,6 +134,7 @@ function App() {
       </Route>
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
+    </>
   );
 }
 

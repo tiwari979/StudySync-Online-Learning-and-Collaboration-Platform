@@ -14,51 +14,45 @@ function StudentViewCommonHeader() {
   }
 
   return (
-    <header className="flex items-center justify-between p-4 border-b relative">
-      <div className="flex items-center space-x-4">
-        <Link to="/home" className="flex items-center hover:text-black">
-          <GraduationCap className="h-8 w-8 mr-4 " />
-          <span className="font-extrabold md:text-xl text-[14px]">
-            StudySync
-          </span>
-        </Link>
-        <div className="flex items-center space-x-1">
-          <Button
-            variant="ghost"
-            onClick={() => {
-              location.pathname.includes("/courses")
-                ? null
-                : navigate("/courses");
-            }}
-            className="text-[14px] md:text-[16px] font-medium"
-          >
-            Explore Courses
-          </Button>
-          <Button
-            variant="ghost"
-            onClick={() => {
-              location.pathname.includes("/groups")
-                ? null
-                : navigate("/groups");
-            }}
-            className="text-[14px] md:text-[16px] font-medium"
-          >
-            Groups
-          </Button>
+    <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/70 dark:bg-neutral-900/70 border-b shadow-sm">
+      <div className="flex items-center justify-between px-4 lg:px-8 py-3">
+        <div className="flex items-center gap-4">
+          <Link to="/home" className="flex items-center hover:text-indigo-700 transition">
+            <GraduationCap className="h-8 w-8 mr-3 text-indigo-600" />
+            <span className="font-extrabold md:text-xl text-[14px] tracking-tight">
+              StudySync
+            </span>
+          </Link>
+          <div className="hidden sm:flex items-center space-x-1">
+            <Button
+              variant="ghost"
+              onClick={() => {
+                location.pathname.includes("/courses") ? null : navigate("/courses");
+              }}
+              className="text-[14px] md:text-[15px] font-medium"
+            >
+              Explore Courses
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                location.pathname.includes("/groups") ? null : navigate("/groups");
+              }}
+              className="text-[14px] md:text-[15px] font-medium"
+            >
+              Groups
+            </Button>
+          </div>
         </div>
-      </div>
-      <div className="flex items-center space-x-4">
-        <div className="flex gap-4 items-center">
+        <div className="flex items-center gap-4">
           <div
             onClick={() => navigate("/student-courses")}
-            className="flex cursor-pointer items-center gap-3"
+            className="flex cursor-pointer items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted transition"
           >
-            <span className="font-extrabold md:text-xl text-[14px]">
-              My Courses
-            </span>
-            <TvMinimalPlay className="w-8 h-8 cursor-pointer" />
+            <TvMinimalPlay className="w-6 h-6 text-indigo-600" />
+            <span className="font-semibold md:text-sm text-[13px]">My Courses</span>
           </div>
-          <Button onClick={handleLogout}>Sign Out</Button>
+          <Button onClick={handleLogout} variant="outline" className="text-sm">Sign Out</Button>
         </div>
       </div>
     </header>
