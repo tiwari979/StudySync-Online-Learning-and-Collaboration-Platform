@@ -18,6 +18,12 @@ import GroupDetailPage from "./pages/student/groups/group-detail";
 import ResetPasswordPage from "./pages/auth/reset-password";
 import AdminDashboard from "./pages/admin";
 import ChatbotWidget from "./components/chatbot/ChatbotWidget";
+import StudentTestsPage from "./pages/student/tests";
+import TakeTestPage from "./pages/student/tests/take-test";
+import TestResultsPage from "./pages/student/tests/results";
+import TestHistoryPage from "./pages/student/tests/history";
+import InstructorTestsPage from "./pages/instructor/tests";
+import CreateTestPage from "./pages/instructor/tests/create";
 
 function App() {
   const { auth } = useContext(AuthContext);
@@ -97,6 +103,36 @@ function App() {
         }
       />
       <Route
+        path="/instructor/tests"
+        element={
+          <RouteGuard
+            element={<InstructorTestsPage />}
+            authenticated={auth?.authenticate}
+            user={auth?.user}
+          />
+        }
+      />
+      <Route
+        path="/instructor/tests/create"
+        element={
+          <RouteGuard
+            element={<CreateTestPage />}
+            authenticated={auth?.authenticate}
+            user={auth?.user}
+          />
+        }
+      />
+      <Route
+        path="/instructor/tests/edit/:testId"
+        element={
+          <RouteGuard
+            element={<CreateTestPage />}
+            authenticated={auth?.authenticate}
+            user={auth?.user}
+          />
+        }
+      />
+      <Route
         path="/admin"
         element={
           <RouteGuard
@@ -131,6 +167,10 @@ function App() {
         />
         <Route path="groups" element={<StudentGroupsPage />} />
         <Route path="groups/:groupId" element={<GroupDetailPage />} />
+        <Route path="student/tests" element={<StudentTestsPage />} />
+        <Route path="student/tests/take/:id" element={<TakeTestPage />} />
+        <Route path="student/tests/results/:id" element={<TestResultsPage />} />
+        <Route path="student/tests/history" element={<TestHistoryPage />} />
       </Route>
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

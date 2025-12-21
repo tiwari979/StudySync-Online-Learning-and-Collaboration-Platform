@@ -1,4 +1,4 @@
-import { GraduationCap, TvMinimalPlay } from "lucide-react";
+import { GraduationCap, TvMinimalPlay, BookOpen } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../ui/button";
 import { useContext } from "react";
@@ -41,6 +41,15 @@ function StudentViewCommonHeader() {
               className="text-[14px] md:text-[15px] font-medium"
             >
               Groups
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                location.pathname.includes("/student/tests") ? null : navigate("/student/tests");
+              }}
+              className="text-[14px] md:text-[15px] font-medium"
+            >
+              Tests
             </Button>
           </div>
         </div>

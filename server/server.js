@@ -14,6 +14,7 @@ const studentCourseProgressRoutes = require("./routes/student-routes/course-prog
 const groupRoutes = require("./routes/group-routes");
 const adminRoutes = require("./routes/admin-routes");
 const chatbotRoutes = require("./routes/chatbot-routes");
+const testRoutes = require("./routes/test-routes");
 const { setupSocketIO } = require("./socket/socket-handler");
 
 const app = express();
@@ -67,6 +68,7 @@ app.use("/student/course-progress", studentCourseProgressRoutes);
 app.use("/groups", groupRoutes);
 app.use("/admin", adminRoutes);
 app.use("/chatbot", chatbotRoutes);
+app.use("/tests", testRoutes);
 
 app.use((err, req, res, next) => {
   console.log(err.stack);

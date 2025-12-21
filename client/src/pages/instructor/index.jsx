@@ -7,7 +7,7 @@ import { AuthContext } from "@/context/auth-context";
 import { InstructorContext } from "@/context/instructor-context";
 import { fetchInstructorCourseListService } from "@/services";
 import { courseCurriculumInitialFormData, courseLandingInitialFormData } from "@/config";
-import { BarChart, Book, LogOut, Plus } from "lucide-react";
+import { BarChart, Book, LogOut, Plus, FileText } from "lucide-react";
 import { useContext, useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -60,6 +60,12 @@ function InstructorDashboardpage() {
       component: <InstructorMessaging />,
     },
     {
+      icon: FileText,
+      label: "Tests",
+      value: "tests",
+      component: null,
+    },
+    {
       icon: LogOut,
       label: "Logout",
       value: "logout",
@@ -91,6 +97,8 @@ function InstructorDashboardpage() {
                 onClick={
                   menuItem.value === "logout"
                     ? handleLogout
+                    : menuItem.value === "tests"
+                    ? () => navigate("/instructor/tests")
                     : () => setActiveTab(menuItem.value)
                 }
               >
