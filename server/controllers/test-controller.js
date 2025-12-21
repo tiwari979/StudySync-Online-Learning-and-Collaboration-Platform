@@ -215,7 +215,10 @@ const getInstructorTestById = async (req, res) => {
       return res.status(404).json({ success: false, message: "Test not found" });
     }
 
-    if (test.createdBy.toString() !== req.user._id.toString() && req.user.role !== "admin") {
+    const userRole = (req.user.role || "").toLowerCase();
+    const isAdmin = userRole === "admin" || userRole === "superadmin";
+    
+    if (test.createdBy.toString() !== req.user._id.toString() && !isAdmin) {
       return res.status(403).json({ success: false, message: "Not authorized to view this test" });
     }
 
@@ -237,7 +240,10 @@ const updateTest = async (req, res) => {
       return res.status(404).json({ success: false, message: "Test not found" });
     }
 
-    if (test.createdBy.toString() !== req.user._id.toString() && req.user.role !== "admin") {
+    const userRole = (req.user.role || "").toLowerCase();
+    const isAdmin = userRole === "admin" || userRole === "superadmin";
+    
+    if (test.createdBy.toString() !== req.user._id.toString() && !isAdmin) {
       return res.status(403).json({ success: false, message: "Not authorized to update this test" });
     }
 
@@ -262,24 +268,55 @@ const updateTest = async (req, res) => {
 const deleteTest = async (req, res) => {
   try {
     const { id } = req.params;
-    const test = await Test.findById(id);
-
-    if (!test) {
-      return res.status(404).json({
-        success: false,
-        message: "Test not found",
-      });
+    
+    // Log user info for debugging
+    console.log("=== DELETE TEST REQUEST ===");
+    console.log("User ID:", req.user._id);
+    console.log("User Role:", req.user.role);
+    console.log("User object:", JSON.stringify(req.user));
+    console.log("Test ID:", id);
+    
+    // Check if user is admin first - admins can delete anything
+    const userRole = (req.user.role || "").toLowerCase();
+    const isAdmin = userRole === "admin" || userRole === "superadmin";
+    
+    console.log("User role (lowercase):", userRole);
+    console.log("Is admin?", isAdmin);
+    
+    if (!isAdmin) {
+      // If not admin, check if user is the test creator
+      const test = await Test.findById(id);
+      
+      if (!test) {
+        console.log("Test not found!");
+        return res.status(404).json({
+          success: false,
+          message: "Test not found",
+        });
+      }
+      
+      const isCreator = test.createdBy.toString() === req.user._id.toString();
+      
+      console.log("Test creator ID:", test.createdBy.toString());
+      console.log("Current user ID:", req.user._id.toString());
+      console.log("Is creator?", isCreator);
+      
+      if (!isCreator) {
+        console.log("AUTHORIZATION FAILED - Not admin and not creator");
+        return res.status(403).json({
+          success: false,
+          message: "Not authorized to delete this test. Role: " + req.user.role,
+        });
+      }
     }
-
-    if (test.createdBy.toString() !== req.user._id.toString() && req.user.role !== "admin") {
-      return res.status(403).json({
-        success: false,
-        message: "Not authorized to delete this test",
-      });
-    }
-
+    
+    // Delete the test and all associated results
+    console.log("Deleting test and results...");
     await Test.findByIdAndDelete(id);
     await TestResult.deleteMany({ testId: id });
+
+    console.log("Test deleted successfully!");
+    console.log("=========================");
 
     res.status(200).json({
       success: true,
@@ -294,6 +331,27 @@ const deleteTest = async (req, res) => {
   }
 };
 
+// Get all tests (admin only)
+const getAllTestsAdmin = async (req, res) => {
+  try {
+    const tests = await Test.find()
+      .populate("createdBy", "userName email")
+      .populate("courseId", "title")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      data: tests,
+    });
+  } catch (error) {
+    console.error("Error fetching all tests:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch tests",
+    });
+  }
+};
+
 module.exports = {
   getAllTests,
   getTestById,
@@ -304,4 +362,5 @@ module.exports = {
   getInstructorTestById,
   updateTest,
   deleteTest,
+  getAllTestsAdmin,
 };

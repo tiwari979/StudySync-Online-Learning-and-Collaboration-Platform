@@ -44,3 +44,8 @@ export async function deleteTestService(id) {
   const { data } = await axiosInstance.delete(`/tests/${id}`);
   return data;
 }
+
+export async function getAllTestsAdminService() {
+  const { data } = await axiosInstance.get("/tests/admin/all-tests");
+  return data;
+}

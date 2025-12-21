@@ -1,6 +1,7 @@
 import { useContext, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AuthContext } from "@/context/auth-context";
+import { useToast } from "@/hooks/use-toast";
 import { getTestByIdService, submitTestService } from "@/services/test-service";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ function TakeTestPage() {
   const { id } = useParams();
   const { auth } = useContext(AuthContext);
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [test, setTest] = useState(null);
   const [loading, setLoading] = useState(true);
   const [answers, setAnswers] = useState({});
@@ -86,7 +88,11 @@ function TakeTestPage() {
       }
     } catch (error) {
       console.error("Error submitting test:", error);
-      alert("Failed to submit test. Please try again.");
+      toast({
+        title: "Error",
+        description: "Failed to submit test. Please try again.",
+        variant: "destructive"
+      });
       setSubmitting(false);
     }
   }

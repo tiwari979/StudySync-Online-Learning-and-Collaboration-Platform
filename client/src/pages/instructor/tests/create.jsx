@@ -2,6 +2,7 @@ import { useContext, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AuthContext } from "@/context/auth-context";
 import { InstructorContext } from "@/context/instructor-context";
+import { useToast } from "@/hooks/use-toast";
 import { createTestService, updateTestService, getInstructorTestByIdService } from "@/services/test-service";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ function CreateTestPage() {
   const { instructorCoursesList } = useContext(InstructorContext);
   const navigate = useNavigate();
   const { testId } = useParams();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
   const isEditMode = Boolean(testId);
@@ -73,7 +75,11 @@ function CreateTestPage() {
         }
       } catch (error) {
         console.error("Error loading test:", error);
-        alert("Failed to load test for editing");
+        toast({
+          title: "Error",
+          description: "Failed to load test for editing",
+          variant: "destructive"
+        });
         navigate("/instructor/tests");
       } finally {
         setInitialLoad(false);
@@ -136,27 +142,47 @@ function CreateTestPage() {
 
     // Validation
     if (!formData.title.trim()) {
-      alert("Please enter a test title");
+      toast({
+        title: "Validation Error",
+        description: "Please enter a test title",
+        variant: "destructive"
+      });
       return;
     }
 
     if (!formData.category.trim()) {
-      alert("Please enter a category");
+      toast({
+        title: "Validation Error",
+        description: "Please enter a category",
+        variant: "destructive"
+      });
       return;
     }
 
     for (let i = 0; i < formData.questions.length; i++) {
       const q = formData.questions[i];
       if (!q.question.trim()) {
-        alert(`Question ${i + 1} is empty`);
+        toast({
+          title: "Validation Error",
+          description: `Question ${i + 1} is empty`,
+          variant: "destructive"
+        });
         return;
       }
       if (q.options.some((opt) => !opt.trim())) {
-        alert(`Question ${i + 1} has empty options`);
+        toast({
+          title: "Validation Error",
+          description: `Question ${i + 1} has empty options`,
+          variant: "destructive"
+        });
         return;
       }
       if (!q.correctAnswer.trim()) {
-        alert(`Question ${i + 1} has no correct answer selected`);
+        toast({
+          title: "Validation Error",
+          description: `Question ${i + 1} has no correct answer selected`,
+          variant: "destructive"
+        });
         return;
       }
     }
@@ -173,12 +199,19 @@ function CreateTestPage() {
         : await createTestService(payload);
 
       if (response.success) {
-        alert(isEditMode ? "Test updated successfully!" : "Test created successfully!");
+        toast({
+          title: "Success",
+          description: isEditMode ? "Test updated successfully!" : "Test created successfully!"
+        });
         navigate("/instructor/tests");
       }
     } catch (error) {
       console.error("Error saving test:", error);
-      alert(`Failed to ${isEditMode ? "update" : "create"} test. Please try again.`);
+      toast({
+        title: "Error",
+        description: `Failed to ${isEditMode ? "update" : "create"} test. Please try again.`,
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }

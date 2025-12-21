@@ -1,6 +1,7 @@
 import { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "@/context/auth-context";
+import { useToast } from "@/hooks/use-toast";
 import { getInstructorTestsService, deleteTestService } from "@/services/test-service";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ import {
 
 function InstructorTestsPage() {
   const { auth } = useContext(AuthContext);
+  const { toast } = useToast();
   const navigate = useNavigate();
   const [tests, setTests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -51,10 +53,11 @@ function InstructorTestsPage() {
         setTests(tests.filter((t) => t._id !== testToDelete._id));
         setDeleteDialogOpen(false);
         setTestToDelete(null);
+        toast({ title: "Success", description: "Test deleted successfully" });
       }
     } catch (error) {
       console.error("Error deleting test:", error);
-      alert("Failed to delete test");
+      toast({ title: "Error", description: "Failed to delete test", variant: "destructive" });
     }
   }
 

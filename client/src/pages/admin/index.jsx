@@ -25,6 +25,7 @@ import {
 import { useEffect, useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "@/context/auth-context";
+import { useToast } from "@/hooks/use-toast";
 import {
   getAdminStatsService,
   getAdminUsersService,
@@ -46,16 +47,19 @@ import {
   removeUserAdminGroupService,
   toggleGroupSettingsAdminService,
 } from "@/services";
-import { Users, BookOpen, DollarSign, ShoppingCart, Trash2, Edit, ToggleLeft, ToggleRight, ShieldOff, ShieldCheck, Check, X, MessageCircleWarning, BellOff, Bell } from "lucide-react";
+import { getInstructorTestsService, deleteTestService, getAllTestsAdminService } from "@/services/test-service";
+import { Users, BookOpen, DollarSign, ShoppingCart, Trash2, Edit, ToggleLeft, ToggleRight, ShieldOff, ShieldCheck, Check, X, MessageCircleWarning, BellOff, Bell, ClipboardList } from "lucide-react";
 
 function AdminDashboard() {
   const navigate = useNavigate();
   const { resetCredentials } = useContext(AuthContext);
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
   const [courses, setCourses] = useState([]);
   const [groups, setGroups] = useState([]);
+  const [tests, setTests] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterRole, setFilterRole] = useState("all");
   const [loading, setLoading] = useState(false);
@@ -81,6 +85,8 @@ function AdminDashboard() {
       fetchCourses();
     } else if (activeTab === "groups") {
       fetchGroups();
+    } else if (activeTab === "tests") {
+      fetchTests();
     }
   }, [activeTab]);
 
@@ -135,6 +141,20 @@ function AdminDashboard() {
       }
     } catch (error) {
       console.error("Error fetching groups:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchTests = async () => {
+    setLoading(true);
+    try {
+      const response = await getAllTestsAdminService();
+      if (response.success) {
+        setTests(response.data);
+      }
+    } catch (error) {
+      console.error("Error fetching tests:", error);
     } finally {
       setLoading(false);
     }
@@ -816,6 +836,84 @@ function AdminDashboard() {
     </div>
   );
 
+  const renderTests = () => (
+    <div className="space-y-4">
+      <h2 className="text-2xl font-bold">Manage Tests</h2>
+      <Card>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b">
+                <th className="p-4 text-left font-semibold text-gray-700">Title</th>
+                <th className="p-4 text-left font-semibold text-gray-700">Category</th>
+                <th className="p-4 text-left font-semibold text-gray-700">Difficulty</th>
+                <th className="p-4 text-left font-semibold text-gray-700">Questions</th>
+                <th className="p-4 text-left font-semibold text-gray-700">Created By</th>
+                <th className="p-4 text-left font-semibold text-gray-700">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tests.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="p-4 text-center text-gray-500">No tests found</td>
+                </tr>
+              ) : (
+                tests.map((test) => (
+                  <tr key={test._id} className="border-b hover:bg-gray-50">
+                    <td className="p-4">{test.title}</td>
+                    <td className="p-4">{test.category}</td>
+                    <td className="p-4">
+                      <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                        test.difficulty === "Easy" ? "bg-green-100 text-green-800" :
+                        test.difficulty === "Medium" ? "bg-yellow-100 text-yellow-800" :
+                        "bg-red-100 text-red-800"
+                      }`}>
+                        {test.difficulty}
+                      </span>
+                    </td>
+                    <td className="p-4">{test.questions?.length || 0}</td>
+                    <td className="p-4">{test.createdBy?.userName || "Unknown"}</td>
+                    <td className="p-4">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={async () => {
+                                if (window.confirm(`Delete test "${test.title}"?`)) {
+                                  try {
+                                    const response = await deleteTestService(test._id);
+                                    if (response.success) {
+                                      toast({ title: "Success", description: "Test deleted successfully" });
+                                      fetchTests();
+                                    } else {
+                                      toast({ title: "Error", description: response.message || "Failed to delete test", variant: "destructive" });
+                                    }
+                                  } catch (error) {
+                                    console.error("Error deleting test:", error);
+                                    toast({ title: "Error", description: error.response?.data?.message || "Failed to delete test", variant: "destructive" });
+                                  }
+                                }
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Delete this test</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  );
+
   return (
     <TooltipProvider>
       <div className="min-h-screen bg-gray-50 p-6">
@@ -872,6 +970,16 @@ function AdminDashboard() {
             >
               Groups
             </button>
+            <button
+              onClick={() => setActiveTab("tests")}
+              className={`px-4 py-2 font-medium ${
+                activeTab === "tests"
+                  ? "border-b-2 border-blue-500 text-blue-600"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Tests
+            </button>
           </div>
         </div>
 
@@ -885,6 +993,7 @@ function AdminDashboard() {
               {activeTab === "users" && renderUsers()}
               {activeTab === "courses" && renderCourses()}
               {activeTab === "groups" && renderGroups()}
+              {activeTab === "tests" && renderTests()}
             </>
           )}
         </div>

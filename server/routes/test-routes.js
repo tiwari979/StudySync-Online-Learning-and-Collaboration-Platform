@@ -9,6 +9,7 @@ const {
   getInstructorTestById,
   updateTest,
   deleteTest,
+  getAllTestsAdmin,
 } = require("../controllers/test-controller");
 const authenticate = require("../middleware/auth-middleware");
 
@@ -26,5 +27,8 @@ router.get("/instructor/my-tests", authenticate, getInstructorTests);
 router.get("/instructor/:id", authenticate, getInstructorTestById);
 router.put("/instructor/:id", authenticate, updateTest);
 router.delete("/:id", authenticate, deleteTest);
+
+// Admin routes
+router.get("/admin/all-tests", authenticate, getAllTestsAdmin);
 
 module.exports = router;
