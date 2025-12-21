@@ -229,7 +229,7 @@ const getSystemStats = async (req, res) => {
     
     // Calculate total revenue
     const orders = await Order.find({ orderStatus: "confirmed" });
-    const totalRevenue = orders.reduce((sum, order) => sum + (order.orderPrice || 0), 0);
+    const totalRevenue = orders.reduce((sum, order) => sum + (parseFloat(order.coursePricing) || 0), 0);
     
     // Get recent activity
     const recentUsersRaw = await User.find({})
