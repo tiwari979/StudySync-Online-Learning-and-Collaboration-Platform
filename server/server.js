@@ -52,7 +52,8 @@ if (!MONGO_URI || MONGO_URI === "your_mongodb_cluster_uri_here") {
     .connect(MONGO_URI)
     .then(() => console.log("✅ MongoDB is connected successfully"))
     .catch((e) => {
-      console.error("❌ MongoDB connection error:", e.message);
+      console.error("❌ MongoDB connection error:");
+      console.error(e);
       console.error("Please check your MONGO_URI in .env file");
     });
 }
